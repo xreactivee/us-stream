@@ -11,10 +11,11 @@ import { hasAuthority, type Role } from "@us-stream/shared";
 import { ConnectionState } from "livekit-client";
 import { Hand } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { CallStage } from "./call-stage";
 import { ChatPanel } from "./chat-panel";
+import { CollaborationSurface } from "./collaboration-surface";
 import { ControlBar } from "./control-bar";
 import { participantRole } from "./participant-role";
 import { ParticipantsPanel } from "./participants-panel";
@@ -23,6 +24,13 @@ import { useCallShortcuts } from "./use-call-shortcuts";
 import { useRoomEvents } from "./use-room-events";
 
 type Panel = "participants" | "chat" | null;
+type StageMode = "video" | "whiteboard" | "notes";
+
+const STAGE_MODES: { mode: StageMode; labelKey: "stageVideo" | "stageBoard" | "stageNotes" }[] = [
+  { mode: "video", labelKey: "stageVideo" },
+  { mode: "whiteboard", labelKey: "stageBoard" },
+  { mode: "notes", labelKey: "stageNotes" },
+];
 
 function formatElapsed(ms: number): string {
   const total = Math.floor(ms / 1000);
@@ -38,11 +46,18 @@ export function CallRoom({
   slug,
   roomTitle,
   myRole,
+  token,
+  realtimeUrl,
+  displayName,
   onLeave,
 }: {
   slug: string;
   roomTitle: string;
   myRole: Role;
+  /** Reused as the credential for the collaborative documents. */
+  token: string;
+  realtimeUrl: string;
+  displayName: string;
   onLeave: () => void;
 }) {
   const t = useTranslations("room");
@@ -51,6 +66,8 @@ export function CallRoom({
   const { localParticipant } = useLocalParticipant();
   const events = useRoomEvents({ slug });
 
+  const stageGroup = useId();
+  const [stage, setStage] = useState<StageMode>("video");
   const [panel, setPanel] = useState<Panel>(null);
   const [pinnedKey, setPinnedKey] = useState<string | null>(null);
   const [privateTo, setPrivateTo] = useState<string | null>(null);
@@ -156,6 +173,28 @@ export function CallRoom({
           </span>
         </div>
 
+        {/* Native radios so the browser supplies arrow-key navigation and the
+            group semantics a screen reader expects. */}
+        <fieldset className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
+          <legend className="sr-only">{t("stageLabel")}</legend>
+          {STAGE_MODES.map(({ mode, labelKey }) => (
+            <label
+              key={mode}
+              className="cursor-pointer rounded-md px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:ring-2 has-focus-visible:ring-ring"
+            >
+              <input
+                type="radio"
+                name={stageGroup}
+                value={mode}
+                checked={stage === mode}
+                onChange={() => setStage(mode)}
+                className="sr-only"
+              />
+              {t(labelKey)}
+            </label>
+          ))}
+        </fieldset>
+
         <div className="flex items-center gap-3">
           {firstInQueueName ? (
             <span className="flex items-center gap-1.5 rounded-md bg-signal/15 px-2 py-1 text-xs text-signal">
@@ -187,14 +226,41 @@ export function CallRoom({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <main className="relative min-w-0 flex-1 p-3">
-          <CallStage
-            pinnedKey={pinnedKey}
-            onTogglePin={setPinnedKey}
-            canModerate={canModerate}
-            actorOutranks={actorOutranks}
-            onModerate={moderate}
-          />
+        <main className="relative flex min-w-0 flex-1 flex-col gap-3 p-3">
+          {stage === "video" ? (
+            <CallStage
+              pinnedKey={pinnedKey}
+              onTogglePin={setPinnedKey}
+              canModerate={canModerate}
+              actorOutranks={actorOutranks}
+              onModerate={moderate}
+            />
+          ) : (
+            <>
+              <div className="min-h-0 flex-1">
+                <CollaborationSurface
+                  kind={stage === "whiteboard" ? "whiteboard" : "notes"}
+                  token={token}
+                  realtimeUrl={realtimeUrl}
+                  displayName={displayName}
+                />
+              </div>
+
+              {/* Faces stay along the bottom rather than disappearing: people
+                  are still talking while they draw. */}
+              <div className="h-28 shrink-0">
+                <CallStage
+                  layout="strip"
+                  pinnedKey={null}
+                  onTogglePin={() => setStage("video")}
+                  canModerate={canModerate}
+                  actorOutranks={actorOutranks}
+                  onModerate={moderate}
+                />
+              </div>
+            </>
+          )}
+
           <ReactionsOverlay reactions={events.reactions} />
         </main>
 

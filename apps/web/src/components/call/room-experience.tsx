@@ -39,12 +39,15 @@ export function RoomExperience({
   requiresPassword,
   knownName,
   initialRole,
+  realtimeUrl,
 }: {
   slug: string;
   roomTitle: string;
   requiresPassword: boolean;
   knownName: string | null;
   initialRole: Role;
+  /** The realtime service, which hosts the whiteboard and the shared notes. */
+  realtimeUrl: string;
 }) {
   const t = useTranslations("room");
   const preview = useMediaPreview();
@@ -137,6 +140,9 @@ export function RoomExperience({
           slug={slug}
           roomTitle={roomTitle}
           myRole={phase.role}
+          token={phase.token}
+          realtimeUrl={realtimeUrl}
+          displayName={knownName ?? displayName}
           onLeave={() => setPhase({ kind: "left" })}
         />
       </LiveKitRoom>

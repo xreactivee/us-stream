@@ -16,6 +16,8 @@ import Fastify from "fastify";
 import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
 import { registerLiveKitWebhook } from "./livekit/webhook";
+import { flushAll } from "./yjs/registry";
+import { registerYjsRoute } from "./yjs/route";
 
 const app = Fastify({
   logger: {
@@ -32,6 +34,7 @@ await app.register(cors, {
 });
 
 await registerLiveKitWebhook(app);
+await registerYjsRoute(app);
 
 app.get("/health", async () => {
   const connection = await connectDb();
@@ -55,6 +58,8 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     app.log.info(`${signal} received, shutting down`);
     await app.close();
+    // Nobody should lose a whiteboard because the service restarted.
+    await flushAll();
     await disconnectFromDatabase();
     process.exit(0);
   });

@@ -64,8 +64,19 @@ const meetingSchema = new Schema<Meeting>(
   { timestamps: true, collection: "meetings" },
 );
 
-// Sparse, because a meeting row is created before LiveKit reports its sid.
-meetingSchema.index({ livekitRoomSid: 1 }, { unique: true, sparse: true });
+/*
+ * A meeting document exists before LiveKit reports its sid, so most rows carry
+ * `null` here for a while.
+ *
+ * This has to be a *partial* index, not a sparse one. Sparse skips documents
+ * where the field is missing, but `null` is a present value — so under a sparse
+ * unique index the second meeting waiting for its sid collides with the first.
+ * The partial filter indexes only rows where a real sid has arrived.
+ */
+meetingSchema.index(
+  { livekitRoomSid: 1 },
+  { unique: true, partialFilterExpression: { livekitRoomSid: { $type: "string" } } },
+);
 meetingSchema.index({ roomId: 1, startedAt: -1 });
 meetingSchema.index({ "participants.userId": 1 });
 

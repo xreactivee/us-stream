@@ -250,6 +250,37 @@
   }
 }
 
+@layer components {
+  /*
+   * Other people's carets in the shared notes. Tiptap renders these markers
+   * itself; the colour comes from each person's awareness state, so only the
+   * shape is styled here.
+   */
+  .collaboration-carets__caret {
+    position: relative;
+    margin-left: -1px;
+    margin-right: -1px;
+    border-left: 1px solid;
+    border-right: 1px solid;
+    word-break: normal;
+    pointer-events: none;
+  }
+
+  .collaboration-carets__label {
+    position: absolute;
+    top: -1.4em;
+    left: -1px;
+    border-radius: 4px 4px 4px 0;
+    padding: 0.1rem 0.35rem;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: normal;
+    white-space: nowrap;
+    color: #14161c;
+    user-select: none;
+  }
+}
+
 @layer utilities {
   /*
    * A single stage light behind the page. Placed on a wrapper rather than the

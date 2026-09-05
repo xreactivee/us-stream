@@ -24,12 +24,18 @@ export function CallStage({
   canModerate,
   actorOutranks,
   onModerate,
+  layout = "full",
 }: {
   pinnedKey: string | null;
   onTogglePin: (key: string | null) => void;
   canModerate: boolean;
   actorOutranks: (identity: string) => boolean;
   onModerate: (action: "mute" | "remove", identity: string, name: string) => void;
+  /**
+   * `strip` is used when the whiteboard or the notes hold the stage: faces stay
+   * visible along one edge instead of competing with the thing being worked on.
+   */
+  layout?: "full" | "strip";
 }) {
   const tracks = useTracks(
     [
@@ -55,6 +61,23 @@ export function CallStage({
   }, [tracks, pinnedKey]);
 
   const tileProps = { canModerate, actorOutranks, onModerate };
+
+  if (layout === "strip") {
+    return (
+      <div className="flex h-full gap-3 overflow-x-auto">
+        {tracks.map((trackRef) => (
+          <div key={keyFor(trackRef)} className="aspect-video h-full shrink-0">
+            <VideoTile
+              trackRef={trackRef}
+              isPinned={false}
+              onTogglePin={() => onTogglePin(keyFor(trackRef))}
+              {...tileProps}
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   if (focused) {
     return (

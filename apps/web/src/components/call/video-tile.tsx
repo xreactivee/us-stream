@@ -42,7 +42,10 @@ export function VideoTile({
   return (
     <div
       className={cn(
-        "group relative overflow-hidden rounded-xl bg-tile text-tile-foreground transition-shadow",
+        // A container query, because the same tile is used full-stage and in
+        // the short strip beside the whiteboard; a fixed avatar size collides
+        // with the name label in the small one.
+        "@container group relative overflow-hidden rounded-xl bg-tile text-tile-foreground transition-shadow",
         // The on-air lamp again: the active speaker gets the amber ring.
         speaking && !isScreenShare
           ? "shadow-[inset_0_0_0_2px_var(--signal)]"
@@ -62,7 +65,7 @@ export function VideoTile({
         />
       ) : (
         <div className="grid size-full place-items-center">
-          <span className="grid size-16 place-items-center rounded-full bg-white/10 font-display text-xl font-semibold">
+          <span className="grid size-10 place-items-center rounded-full bg-white/10 font-display text-sm font-semibold @[16rem]:size-16 @[16rem]:text-xl">
             {initialsOf(name)}
           </span>
         </div>

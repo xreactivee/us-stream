@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { RoomExperience } from "@/components/call/room-experience";
+import { env } from "@/env";
 import { getRoomBySlug, roleForUser } from "@/lib/rooms";
 import { getSession } from "@/lib/session";
 
@@ -24,6 +25,7 @@ export default async function RoomPage({ params }: PageProps<"/r/[slug]">) {
       requiresPassword={Boolean(room.passwordHash)}
       knownName={session?.user.name ?? null}
       initialRole={roleForUser(room, session?.user.id)}
+      realtimeUrl={env.NEXT_PUBLIC_REALTIME_URL}
     />
   );
 }
