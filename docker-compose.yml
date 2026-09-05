@@ -4,19 +4,15 @@
 name: us-stream
 
 services:
-  postgres:
-    image: postgres:17-alpine
+  mongo:
+    image: mongo:8
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: us_stream
-      POSTGRES_PASSWORD: us_stream
-      POSTGRES_DB: us_stream
     ports:
-      - "5432:5432"
+      - "27017:27017"
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - mongo-data:/data/db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U us_stream -d us_stream"]
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -48,5 +44,5 @@ services:
       LIVEKIT_KEYS: "devkey: secret"
 
 volumes:
-  postgres-data:
+  mongo-data:
   redis-data:

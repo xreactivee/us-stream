@@ -1,0 +1,54 @@
+/**
+ * MongoDB needs no migrations, but indexes declared in a schema only reach the
+ * server when something asks for them. Run this after changing an index:
+ *
+ *   pnpm db:indexes
+ *
+ * `syncIndexes` also drops indexes that are no longer declared, so the database
+ * ends up matching the schema exactly rather than accumulating old ones.
+ */
+
+import { config as loadEnv } from "dotenv";
+import { connectToDatabase, disconnectFromDatabase } from "../connect";
+import {
+  AdmissionRequestModel,
+  BreakoutRoomModel,
+  DocModel,
+  MeetingModel,
+  MessageModel,
+  PollModel,
+  QuestionModel,
+  RoomModel,
+  ScheduledMeetingModel,
+} from "../models/index";
+
+loadEnv({ path: "../../.env", quiet: true });
+
+const uri = process.env.MONGODB_URI;
+
+if (!uri) {
+  throw new Error("MONGODB_URI is not set — copy .env.example to .env at the repository root.");
+}
+
+const models = [
+  RoomModel,
+  MeetingModel,
+  AdmissionRequestModel,
+  MessageModel,
+  PollModel,
+  QuestionModel,
+  BreakoutRoomModel,
+  DocModel,
+  ScheduledMeetingModel,
+];
+
+await connectToDatabase({ uri, maxPoolSize: 2 });
+
+for (const model of models) {
+  const dropped = await model.syncIndexes();
+  const label = dropped.length > 0 ? `dropped ${dropped.join(", ")}` : "up to date";
+  console.log(`${model.modelName.padEnd(20)} ${label}`);
+}
+
+await disconnectFromDatabase();
+console.log("\nIndexes synchronised.");

@@ -17,10 +17,7 @@
     "typecheck": "pnpm --recursive typecheck",
     "test": "pnpm --recursive test",
     "test:e2e": "pnpm --filter web test:e2e",
-    "db:generate": "pnpm --filter @us-stream/db db:generate",
-    "db:migrate": "pnpm --filter @us-stream/db db:migrate",
-    "db:push": "pnpm --filter @us-stream/db db:push",
-    "db:studio": "pnpm --filter @us-stream/db db:studio",
+    "db:indexes": "pnpm --filter @us-stream/db db:indexes",
     "infra:up": "docker compose up -d",
     "infra:down": "docker compose down",
     "infra:logs": "docker compose logs -f"

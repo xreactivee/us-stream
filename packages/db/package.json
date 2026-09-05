@@ -5,25 +5,20 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./schema": "./src/schema/index.ts"
+    "./models": "./src/models/index.ts"
   },
   "scripts": {
-    "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
+    "db:indexes": "tsx src/scripts/sync-indexes.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@us-stream/shared": "workspace:*",
-    "drizzle-orm": "^0.45.2",
-    "pg": "^8.23.0"
+    "mongoose": "^9.9.4"
   },
   "devDependencies": {
     "@types/node": "^22.19.0",
-    "@types/pg": "^8.23.1",
     "dotenv": "^17.4.2",
-    "drizzle-kit": "^0.31.10",
+    "tsx": "^4.20.0",
     "typescript": "^5.9.3"
   }
 }

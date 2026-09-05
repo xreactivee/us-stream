@@ -14,7 +14,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   HOST: z.string().default("0.0.0.0"),
 
-  DATABASE_URL: z.string().min(1),
+  MONGODB_URI: z.string().min(1),
 
   LIVEKIT_API_KEY: z.string().min(1),
   LIVEKIT_API_SECRET: z.string().min(1),

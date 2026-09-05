@@ -1,43 +1,28 @@
 import "server-only";
 
-import { createDb, createPool, type Database, type Pool } from "@us-stream/db";
-import { attachDatabasePool } from "@vercel/functions";
+import { connectToDatabase, getMongoClient } from "@us-stream/db";
 import { env } from "@/env";
 
 /**
- * One pool per warm function instance.
+ * Opens the shared Mongoose connection, or returns the existing one.
  *
- * `attachDatabasePool` keeps the instance alive just long enough for idle
- * connections to leave the pool before Vercel suspends it, which is what stops
- * a busy deployment from exhausting Postgres' connection ceiling. The pool is
- * kept small for the same reason: every warm instance holds its own.
+ * Every route handler and server component that touches the database must
+ * await this first. `bufferCommands` is off, so a query issued before the
+ * connection is up fails immediately rather than hanging.
  *
- * The `globalThis` cache is for development, where hot reloading would
- * otherwise create a new pool on every edit.
+ * The pool is deliberately small: each warm Vercel instance keeps its own, and
+ * a MongoDB Atlas free cluster has a modest connection ceiling.
  */
-const globalForDb = globalThis as unknown as {
-  usStreamPool?: Pool;
-  usStreamDb?: Database;
-};
-
-function initialise(): { pool: Pool; db: Database } {
-  const pool = createPool({
-    connectionString: env.DATABASE_URL,
-    max: 3,
-    // Railway's Postgres proxy presents a self-signed certificate.
-    ssl: env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
-  });
-
-  attachDatabasePool(pool);
-
-  return { pool, db: createDb(pool) };
+export function connectDb() {
+  return connectToDatabase({ uri: env.MONGODB_URI, maxPoolSize: 5 });
 }
 
-if (!globalForDb.usStreamDb) {
-  const created = initialise();
-  globalForDb.usStreamPool = created.pool;
-  globalForDb.usStreamDb = created.db;
+/**
+ * The raw driver client, for Better Auth — it manages its own collections
+ * through the MongoDB driver rather than Mongoose, and sharing this client
+ * keeps everything on one pool.
+ */
+export async function getAuthDbClient() {
+  await connectDb();
+  return getMongoClient();
 }
-
-export const pool = globalForDb.usStreamPool as Pool;
-export const db = globalForDb.usStreamDb as Database;

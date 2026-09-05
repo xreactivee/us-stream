@@ -10,10 +10,10 @@ shared whiteboard, collaborative notes, breakout rooms and polls.
 | `apps/web`          | Vercel        | The whole UI, plus auth, room CRUD and LiveKit token minting        |
 | `apps/realtime`     | Railway       | Yjs sync, LiveKit webhooks, breakout timers — anything needing a persistent socket or a timer |
 | LiveKit             | LiveKit Cloud | The SFU: audio, video, screen share, data channels, TURN            |
-| Postgres            | Railway       | Rooms, meetings, chat history, polls, document snapshots            |
+| MongoDB             | Atlas         | Rooms, meetings, chat history, polls, document snapshots            |
 | Redis               | Railway       | Yjs pub/sub between realtime replicas (only from phase 5)           |
 | `packages/shared`   | —             | Zod schemas, constants, the in-call data-channel protocol           |
-| `packages/db`       | —             | Drizzle schema and the pool factory both runtimes use               |
+| `packages/db`       | —             | Mongoose models, the connection singleton, and the cascade helpers  |
 
 There is no separate REST backend. Everything that can live in a Next.js route handler does; the
 Fastify service exists only for the work Vercel functions cannot do.
@@ -43,18 +43,21 @@ The repository keeps a **single `.env` at its root**. The web app loads it throu
 
 ### Infrastructure
 
-If you have Docker, `docker compose up -d` starts Postgres, Redis and a development LiveKit server
+If you have Docker, `docker compose up -d` starts MongoDB, Redis and a development LiveKit server
 matching the defaults in `.env.example`.
 
-Without Docker, point `DATABASE_URL` at any hosted Postgres and `NEXT_PUBLIC_LIVEKIT_URL` /
+Without Docker, point `MONGODB_URI` at a MongoDB Atlas cluster and `NEXT_PUBLIC_LIVEKIT_URL` /
 `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` at a LiveKit Cloud project. Redis is not needed before
 phase 5.
 
 ```bash
-pnpm db:generate   # write a migration from the Drizzle schema
-pnpm db:migrate    # apply it
-pnpm dev           # web on :3000, realtime on :3001
+pnpm db:indexes   # push the schemas' indexes to the cluster
+pnpm dev          # web on :3000, realtime on :3001
 ```
+
+MongoDB needs no migrations, but an index declared in a schema only reaches the server when
+something asks for it. Run `pnpm db:indexes` after changing one; it also drops indexes that are no
+longer declared, so the cluster ends up matching the schemas exactly.
 
 ## Scripts
 
@@ -67,15 +70,21 @@ pnpm dev           # web on :3000, realtime on :3001
 | `pnpm lint:fix`   | Biome check with fixes and import sorting applied    |
 | `pnpm test`       | Vitest unit tests                                    |
 | `pnpm test:e2e`   | Playwright, with fake camera and microphone devices  |
-| `pnpm db:studio`  | Drizzle Studio against the configured database       |
+| `pnpm db:indexes` | Synchronises every model's indexes with the cluster  |
 
 ## Conventions
 
 - **TypeScript everywhere, strict.** `noUncheckedIndexedAccess` is on.
 - **One definition per concept.** Roles and their permissions live in `packages/shared/src/roles.ts`;
   the in-call wire protocol lives in `packages/shared/src/events.ts` and is validated on both ends.
-- **Enum-like columns are `text` with a TypeScript type**, not Postgres enums — the values are
-  already constrained by Zod, and text columns do not need a migration to grow.
+- **Bounded children are embedded, unbounded ones are not.** Room members, meeting participants,
+  poll votes and breakout assignments live inside their parent document because they are always read
+  with it and their number is capped by the room's capacity. Chat messages get their own collection.
+- **MongoDB has no cascading deletes**, so every delete that spans documents goes through
+  `packages/db/src/cascade.ts`. Nothing calls `deleteOne` on a room directly.
+- **`sanitizeFilter` is on globally** (`packages/db/src/connect.ts`). It strips query operators out
+  of filter values, so a request body containing `{"$ne": null}` cannot widen a query into one that
+  matches every document.
 - **Biome** handles formatting, linting and import ordering. There is no ESLint or Prettier.
 - The workspace packages ship TypeScript source rather than build output; Next transpiles them via
   `transpilePackages` and the realtime service bundles them with tsup.

@@ -11,9 +11,9 @@ const nextConfig: NextConfig = {
   // so Next has to compile them itself.
   transpilePackages: ["@us-stream/db", "@us-stream/shared"],
 
-  // `pg` opens raw sockets and must stay a real Node module instead of being
-  // bundled into the server output.
-  serverExternalPackages: ["pg"],
+  // Mongoose registers models on a module-level singleton and loads optional
+  // native dependencies, neither of which survives bundling.
+  serverExternalPackages: ["mongoose"],
 
   typescript: {
     ignoreBuildErrors: false,

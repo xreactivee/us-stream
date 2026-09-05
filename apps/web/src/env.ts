@@ -8,7 +8,7 @@ import { z } from "zod";
  */
 export const env = createEnv({
   server: {
-    DATABASE_URL: z.string().min(1),
+    MONGODB_URI: z.string().min(1),
 
     LIVEKIT_API_KEY: z.string().min(1),
     LIVEKIT_API_SECRET: z.string().min(1),
@@ -31,7 +31,7 @@ export const env = createEnv({
     NEXT_PUBLIC_REALTIME_URL: z.string().min(1),
   },
   runtimeEnv: {
-    DATABASE_URL: process.env.DATABASE_URL,
+    MONGODB_URI: process.env.MONGODB_URI,
     LIVEKIT_API_KEY: process.env.LIVEKIT_API_KEY,
     LIVEKIT_API_SECRET: process.env.LIVEKIT_API_SECRET,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,

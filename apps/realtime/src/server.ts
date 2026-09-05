@@ -13,7 +13,7 @@
 
 import cors from "@fastify/cors";
 import Fastify from "fastify";
-import { pool } from "./db";
+import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
 
 const app = Fastify({
@@ -31,12 +31,16 @@ await app.register(cors, {
 });
 
 app.get("/health", async () => {
-  await pool.query("select 1");
+  const connection = await connectDb();
+  await connection.connection.db?.admin().ping();
   return { status: "ok", uptime: process.uptime() };
 });
 
 async function start() {
   try {
+    // Connect before listening so the service never reports ready while the
+    // database is unreachable.
+    await connectDb();
     await app.listen({ port: env.PORT, host: env.HOST });
   } catch (error) {
     app.log.error(error);
@@ -48,7 +52,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     app.log.info(`${signal} received, shutting down`);
     await app.close();
-    await pool.end();
+    await disconnectFromDatabase();
     process.exit(0);
   });
 }
