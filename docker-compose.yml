@@ -1,0 +1,52 @@
+# Local development infrastructure only. Production uses Railway (Postgres,
+# Redis, realtime service), Vercel (web) and LiveKit Cloud (media).
+
+name: us-stream
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: us_stream
+      POSTGRES_PASSWORD: us_stream
+      POSTGRES_DB: us_stream
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U us_stream -d us_stream"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  livekit:
+    image: livekit/livekit-server:latest
+    restart: unless-stopped
+    # --dev enables the well-known devkey/secret pair. Never use in production.
+    command: ["--dev", "--bind", "0.0.0.0"]
+    ports:
+      - "7880:7880" # signalling (WebSocket)
+      - "7881:7881" # WebRTC over TCP (ICE/TCP fallback)
+      - "50000-50100:50000-50100/udp" # WebRTC media
+    environment:
+      LIVEKIT_KEYS: "devkey: secret"
+
+volumes:
+  postgres-data:
+  redis-data:

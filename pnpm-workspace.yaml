@@ -1,0 +1,14 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Postinstall scripts are opt-in. These packages need theirs to fetch or build
+# their native binaries.
+allowBuilds:
+  "@biomejs/biome": true
+  "@parcel/watcher": true
+  "@swc/core": true
+  "@tailwindcss/oxide": true
+  esbuild: true
+  sharp: true
+  unrs-resolver: true

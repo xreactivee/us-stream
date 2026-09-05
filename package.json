@@ -1,0 +1,32 @@
+{
+  "name": "us-stream",
+  "version": "0.1.0",
+  "private": true,
+  "description": "us-stream — self-hosted video conferencing: rooms, video, audio, screen sharing, chat, whiteboard and breakout rooms.",
+  "packageManager": "pnpm@11.25.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "build": "pnpm --recursive --filter \"./apps/*\" build",
+    "start": "pnpm --parallel --filter \"./apps/*\" start",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "pnpm --recursive test",
+    "test:e2e": "pnpm --filter web test:e2e",
+    "db:generate": "pnpm --filter @us-stream/db db:generate",
+    "db:migrate": "pnpm --filter @us-stream/db db:migrate",
+    "db:push": "pnpm --filter @us-stream/db db:push",
+    "db:studio": "pnpm --filter @us-stream/db db:studio",
+    "infra:up": "docker compose up -d",
+    "infra:down": "docker compose down",
+    "infra:logs": "docker compose logs -f"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.4.2",
+    "typescript": "^5.9.3"
+  }
+}

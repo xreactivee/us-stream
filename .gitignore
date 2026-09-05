@@ -1,0 +1,33 @@
+node_modules/
+.pnpm-store/
+
+# builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+
+# env
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# test / tooling
+coverage/
+playwright-report/
+test-results/
+.turbo/
+.vercel/
+
+# editor / os
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# local infra
+docker/data/
+*.log
