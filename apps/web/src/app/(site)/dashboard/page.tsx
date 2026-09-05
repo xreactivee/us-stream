@@ -1,6 +1,9 @@
-import { Plus, Video } from "lucide-react";
+import { Video } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { Button } from "@/components/ui/button";
+import { CreateRoomDialog } from "@/components/create-room-dialog";
+import { InstantMeetingButton } from "@/components/instant-meeting-button";
+import { RoomCard, type RoomSummary } from "@/components/room-card";
+import { listRoomsForUser } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
 
 export async function generateMetadata() {
@@ -10,7 +13,23 @@ export async function generateMetadata() {
 
 export default async function DashboardPage() {
   const session = await requireSession("/dashboard");
-  const t = await getTranslations("dashboard");
+  const [t, rooms] = await Promise.all([
+    getTranslations("dashboard"),
+    listRoomsForUser(session.user.id),
+  ]);
+
+  const summaries: RoomSummary[] = rooms.map((room) => ({
+    id: String(room._id),
+    slug: room.slug,
+    name: room.name,
+    isPersistent: room.isPersistent,
+    isLocked: room.isLocked,
+    // The hash itself never leaves the server; the client only needs to know
+    // that a password exists.
+    hasPassword: Boolean(room.passwordHash),
+    waitingRoomEnabled: room.waitingRoomEnabled,
+    isOwner: room.ownerId === session.user.id,
+  }));
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-14">
@@ -21,33 +40,28 @@ export default async function DashboardPage() {
         </div>
 
         <div className="flex gap-2">
-          <Button variant="outline" disabled>
-            <Plus />
-            {t("newRoom")}
-          </Button>
-          <Button disabled>
-            <Video />
-            {t("instantMeeting")}
-          </Button>
+          <CreateRoomDialog />
+          <InstantMeetingButton />
         </div>
       </header>
 
-      <section className="mt-10 rounded-2xl border border-dashed border-border bg-card/40 px-8 py-16 text-center">
-        <span className="mx-auto grid size-11 place-items-center rounded-full bg-secondary">
-          <Video className="size-5 text-muted-foreground" aria-hidden />
-        </span>
-        <h2 className="mt-5 text-lg font-semibold">{t("emptyTitle")}</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-pretty text-muted-foreground">
-          {t("emptyBody")}
-        </p>
-        <p className="tabular mt-6 text-xs tracking-[0.12em] text-muted-foreground uppercase">
-          {t("comingSoon")}
-        </p>
-      </section>
-
-      <p className="mt-8 text-xs text-muted-foreground">
-        <span className="tabular">{session.user.email}</span>
-      </p>
+      {summaries.length === 0 ? (
+        <section className="mt-10 rounded-2xl border border-dashed border-border bg-card/40 px-8 py-16 text-center">
+          <span className="mx-auto grid size-11 place-items-center rounded-full bg-secondary">
+            <Video className="size-5 text-muted-foreground" aria-hidden />
+          </span>
+          <h2 className="mt-5 text-lg font-semibold">{t("emptyTitle")}</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-pretty text-muted-foreground">
+            {t("emptyBody")}
+          </p>
+        </section>
+      ) : (
+        <section className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-border bg-border sm:grid-cols-2 lg:grid-cols-3">
+          {summaries.map((room) => (
+            <RoomCard key={room.id} room={room} />
+          ))}
+        </section>
+      )}
     </div>
   );
 }

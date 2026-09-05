@@ -15,6 +15,7 @@ import cors from "@fastify/cors";
 import Fastify from "fastify";
 import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
+import { registerLiveKitWebhook } from "./livekit/webhook";
 
 const app = Fastify({
   logger: {
@@ -29,6 +30,8 @@ await app.register(cors, {
   origin: env.ALLOWED_ORIGINS,
   credentials: true,
 });
+
+await registerLiveKitWebhook(app);
 
 app.get("/health", async () => {
   const connection = await connectDb();

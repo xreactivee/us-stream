@@ -20,6 +20,9 @@ export interface GuestIdentity {
   expiresAt: number;
 }
 
+/** Holds the signed identity so a reload does not create a new participant. */
+export const GUEST_COOKIE_NAME = "us-stream-guest";
+
 function sign(payload: string): string {
   return createHmac("sha256", env.GUEST_TOKEN_SECRET).update(payload).digest("base64url");
 }

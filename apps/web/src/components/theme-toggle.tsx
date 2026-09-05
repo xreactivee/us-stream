@@ -41,6 +41,7 @@ export function ThemeToggle() {
             type="radio"
             name={groupName}
             value={value}
+            aria-label={t(labelKey)}
             checked={mounted && theme === value}
             onChange={() => {
               setTheme(value);
