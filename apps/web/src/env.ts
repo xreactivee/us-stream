@@ -29,6 +29,11 @@ export const env = createEnv({
     NEXT_PUBLIC_LIVEKIT_URL: z.string().min(1),
     /** The realtime service, used for Yjs document sync. */
     NEXT_PUBLIC_REALTIME_URL: z.string().min(1),
+    /**
+     * Printed on the privacy policy and the terms, and submitted to Google's
+     * OAuth consent screen. Public, so use an address you are happy to publish.
+     */
+    NEXT_PUBLIC_CONTACT_EMAIL: z.email().optional(),
   },
   runtimeEnv: {
     MONGODB_URI: process.env.MONGODB_URI,
@@ -42,6 +47,7 @@ export const env = createEnv({
     REALTIME_INTERNAL_SECRET: process.env.REALTIME_INTERNAL_SECRET,
     NEXT_PUBLIC_LIVEKIT_URL: process.env.NEXT_PUBLIC_LIVEKIT_URL,
     NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
+    NEXT_PUBLIC_CONTACT_EMAIL: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
   },
   emptyStringAsUndefined: true,
   /** Lets `next build` run in CI without production secrets present. */

@@ -1,0 +1,102 @@
+{
+  "app": {
+    "name": "us-stream",
+    "description": "Video, ses ve ekran paylaşımı için odalar — sohbet, ortak beyaz tahta ve alt odalarla birlikte."
+  },
+  "common": {
+    "loading": "Yükleniyor",
+    "cancel": "Vazgeç",
+    "save": "Kaydet",
+    "saved": "Kaydedildi",
+    "continue": "Devam",
+    "back": "Geri",
+    "error": "Bir şeyler ters gitti",
+    "tryAgain": "Tekrar dene"
+  },
+  "nav": {
+    "signIn": "Giriş yap",
+    "signUp": "Hesap aç",
+    "signOut": "Çıkış yap",
+    "dashboard": "Odalarım",
+    "settings": "Ayarlar",
+    "privacy": "Gizlilik",
+    "terms": "Kullanım koşulları",
+    "openMenu": "Menüyü aç",
+    "account": "Hesap"
+  },
+  "landing": {
+    "badge": "Kendi sunucunda, kendi kurallarınla",
+    "headline": "Toplantı odan, senin elinde.",
+    "subhead": "Görüntülü ve sesli görüşme, ekran paylaşımı, sohbet, ortak beyaz tahta ve alt odalar. Bağlantıyı paylaş, karşı taraf hesap açmadan katılsın.",
+    "startMeeting": "Toplantı başlat",
+    "joinWithCode": "Kodla katıl",
+    "codeLabel": "Oda kodu",
+    "codePlaceholder": "mavi-kedi-4821",
+    "join": "Katıl",
+    "features": {
+      "videoTitle": "Görüntü ve ses",
+      "videoBody": "Aktif konuşmacı vurgusu, ızgara ve sunum görünümleri, cihaz seçimi ve bağlantı kalitesi göstergesi.",
+      "screenTitle": "Ekran paylaşımı",
+      "screenBody": "Sekme sesiyle birlikte paylaş, sunum moduna geç, dilediğin katılımcıyı sabitle.",
+      "chatTitle": "Sohbet ve tepkiler",
+      "chatBody": "Anlık mesajlaşma, emoji tepkileri, el kaldırma ve söz sırası kuyruğu.",
+      "boardTitle": "Beyaz tahta ve notlar",
+      "boardBody": "Odaya bağlı kalıcı beyaz tahta ve herkesin aynı anda yazdığı ortak toplantı notu.",
+      "breakoutTitle": "Alt odalar",
+      "breakoutBody": "Katılımcıları alt odalara böl, süre koy, herkesi tek tuşla ana odaya geri çağır.",
+      "pollTitle": "Anket ve soru-cevap",
+      "pollBody": "Canlı anket sonuçları, oylanabilir sorular ve cevaplandı işareti."
+    }
+  },
+  "auth": {
+    "signInTitle": "Tekrar hoş geldin",
+    "signInSubtitle": "Odalarına devam etmek için giriş yap.",
+    "signUpTitle": "Hesabını aç",
+    "signUpSubtitle": "Kalıcı odalar açmak ve geçmişini görmek için bir hesap yeterli.",
+    "name": "Ad",
+    "namePlaceholder": "Adın",
+    "email": "E-posta",
+    "emailPlaceholder": "sen@ornek.com",
+    "password": "Şifre",
+    "passwordHint": "En az 8 karakter",
+    "continueWithGoogle": "Google ile devam et",
+    "or": "veya",
+    "noAccount": "Hesabın yok mu?",
+    "hasAccount": "Zaten hesabın var mı?",
+    "signingIn": "Giriş yapılıyor",
+    "signingUp": "Hesap açılıyor",
+    "guestNotice": "Bir toplantıya katılmak için hesaba gerek yok — davet bağlantısı yeter.",
+    "errors": {
+      "invalidCredentials": "E-posta veya şifre hatalı.",
+      "emailTaken": "Bu e-posta zaten kayıtlı.",
+      "weakPassword": "Şifre en az 8 karakter olmalı.",
+      "generic": "Giriş yapılamadı. Biraz sonra tekrar dene."
+    }
+  },
+  "dashboard": {
+    "title": "Odalarım",
+    "subtitle": "Kalıcı odaların ve geçmiş toplantıların.",
+    "newRoom": "Yeni oda",
+    "instantMeeting": "Hemen başlat",
+    "emptyTitle": "Henüz odan yok",
+    "emptyBody": "Kalıcı bir oda aç, bağlantısı hep aynı kalsın — istediğin zaman aynı linkle toplan.",
+    "comingSoon": "Oda yönetimi bir sonraki adımda geliyor."
+  },
+  "settings": {
+    "title": "Ayarlar",
+    "subtitle": "Görünüm ve dil tercihlerin bu tarayıcıda ve hesabında saklanır.",
+    "language": "Dil",
+    "languageHint": "Seçmezsen bulunduğun ülkeye göre belirlenir.",
+    "languageAuto": "Otomatik",
+    "theme": "Tema",
+    "themeLight": "Açık",
+    "themeDark": "Koyu",
+    "themeSystem": "Sistem",
+    "toggleTheme": "Temayı değiştir"
+  },
+  "legal": {
+    "privacyTitle": "Gizlilik politikası",
+    "termsTitle": "Kullanım koşulları",
+    "lastUpdated": "Son güncelleme"
+  }
+}

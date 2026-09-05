@@ -1,23 +1,30 @@
-import { loadEnvConfig } from "@next/env";
 import type { NextConfig } from "next";
+import createNextIntlPlugin from "next-intl/plugin";
 
-// The repository keeps a single .env at its root so the web app, the realtime
-// service and the migration tooling cannot drift apart. Next only looks inside
-// its own directory, so the root file is loaded explicitly here.
-loadEnvConfig(new URL("../..", import.meta.url).pathname);
+// The single .env at the repository root is loaded by `dotenv-cli` in this
+// package's scripts, before Next starts. Loading it from inside this file does
+// not work: Next calls `@next/env`'s loadEnvConfig itself for the app
+// directory, and that resets process.env to the snapshot it took first, wiping
+// anything added afterwards. Setting the variables in the parent process makes
+// them part of that snapshot instead.
+//
+// On Vercel and Railway the file is absent and the platform's own variables are
+// used; dotenv-cli tolerates the missing file and carries on.
+
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
   // The workspace packages ship TypeScript source rather than a build output,
   // so Next has to compile them itself.
   transpilePackages: ["@us-stream/db", "@us-stream/shared"],
 
-  // Mongoose registers models on a module-level singleton and loads optional
-  // native dependencies, neither of which survives bundling.
-  serverExternalPackages: ["mongoose"],
+  // Mongoose registers models on a module-level singleton and the MongoDB
+  // driver loads optional native dependencies; neither survives bundling.
+  serverExternalPackages: ["mongoose", "mongodb"],
 
   typescript: {
     ignoreBuildErrors: false,
   },
 };
 
-export default nextConfig;
+export default withNextIntl(nextConfig);

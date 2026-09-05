@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Archivo, Bricolage_Grotesque, JetBrains_Mono } from "next/font/google";
+import { NextIntlClientProvider } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 import "./globals.css";
 import { Providers } from "./providers";
 
@@ -21,15 +23,15 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "us-stream",
-    template: "%s · us-stream",
-  },
-  description:
-    "Rooms for video, audio, screen sharing, chat, a shared whiteboard and breakout rooms.",
-  applicationName: "us-stream",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations("app");
+
+  return {
+    title: { default: t("name"), template: `%s · ${t("name")}` },
+    description: t("description"),
+    applicationName: t("name"),
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: [
@@ -42,15 +44,19 @@ export const viewport: Viewport = {
   maximumScale: 1,
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
+
   return (
     <html
-      lang="en"
+      lang={locale}
       suppressHydrationWarning
       className={`${archivo.variable} ${bricolage.variable} ${jetbrainsMono.variable}`}
     >
-      <body className="min-h-dvh antialiased grain">
-        <Providers>{children}</Providers>
+      <body className="grain min-h-dvh antialiased">
+        <NextIntlClientProvider>
+          <Providers>{children}</Providers>
+        </NextIntlClientProvider>
       </body>
     </html>
   );
