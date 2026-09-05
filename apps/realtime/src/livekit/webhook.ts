@@ -1,4 +1,4 @@
-import { MeetingModel } from "@us-stream/db";
+import { MeetingModel, trusted } from "@us-stream/db";
 import type { FastifyInstance } from "fastify";
 import { WebhookReceiver } from "livekit-server-sdk";
 import { env } from "../env";
@@ -66,7 +66,12 @@ export async function registerLiveKitWebhook(app: FastifyInstance) {
           const metadata = safeMetadata(participant.metadata);
 
           await MeetingModel.updateOne(
-            { livekitRoomSid: sid, "participants.identity": { $ne: participant.identity } },
+            // `trusted` because `sanitizeFilter` is on globally and cannot
+            // tell our own `$ne` from one arriving in a request body.
+            {
+              livekitRoomSid: sid,
+              "participants.identity": trusted({ $ne: participant.identity }),
+            },
             {
               $push: {
                 participants: {

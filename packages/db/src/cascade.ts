@@ -8,9 +8,16 @@
  * leaves orphaned children that the next call — or `pruneOrphans` — removes.
  * Nothing reads a child without its parent, so an orphan is invisible rather
  * than wrong.
+ *
+ * Every query operator here is wrapped in `trusted()`. `sanitizeFilter` is on
+ * globally so that a `$`-prefixed key arriving in a request body cannot widen
+ * a query; the cost is that it cannot tell our own deliberate `$in` from an
+ * injected one, and wraps both. `trusted()` is how Mongoose lets a caller say
+ * this operator came from the code, not from a user.
  */
 
 import type { Types } from "mongoose";
+import { trusted } from "mongoose";
 import { BreakoutRoomModel } from "./models/breakout";
 import { DocModel } from "./models/doc";
 import { PollModel, QuestionModel } from "./models/engagement";
@@ -24,7 +31,7 @@ export async function deleteMeetingsAndChildren(meetingIds: Types.ObjectId[]): P
     return;
   }
 
-  const filter = { meetingId: { $in: meetingIds } };
+  const filter = { meetingId: trusted({ $in: meetingIds }) };
 
   await Promise.all([
     MessageModel.deleteMany(filter),
@@ -33,7 +40,7 @@ export async function deleteMeetingsAndChildren(meetingIds: Types.ObjectId[]): P
     BreakoutRoomModel.deleteMany(filter),
   ]);
 
-  await MeetingModel.deleteMany({ _id: { $in: meetingIds } });
+  await MeetingModel.deleteMany({ _id: trusted({ $in: meetingIds }) });
 }
 
 export async function deleteRoomAndChildren(roomId: Types.ObjectId): Promise<void> {
@@ -55,20 +62,24 @@ export async function deleteRoomAndChildren(roomId: Types.ObjectId): Promise<voi
  * the code above.
  */
 export async function pruneOrphans(): Promise<{ meetings: number; children: number }> {
-  const roomIds = await RoomModel.find().select("_id").lean();
-  const liveRoomIds = roomIds.map((room) => room._id);
+  const rooms = await RoomModel.find().select("_id").lean();
+  const liveRoomIds = rooms.map((room) => room._id);
 
-  const orphanedMeetings = await MeetingModel.find({ roomId: { $nin: liveRoomIds } })
+  const orphanedMeetings = await MeetingModel.find({
+    roomId: trusted({ $nin: liveRoomIds }),
+  })
     .select("_id")
     .lean();
   const orphanedMeetingIds = orphanedMeetings.map((meeting) => meeting._id);
 
   await deleteMeetingsAndChildren(orphanedMeetingIds);
 
+  const orphanFilter = { roomId: trusted({ $nin: liveRoomIds }) };
+
   const results = await Promise.all([
-    DocModel.deleteMany({ roomId: { $nin: liveRoomIds } }),
-    AdmissionRequestModel.deleteMany({ roomId: { $nin: liveRoomIds } }),
-    ScheduledMeetingModel.deleteMany({ roomId: { $nin: liveRoomIds } }),
+    DocModel.deleteMany(orphanFilter),
+    AdmissionRequestModel.deleteMany(orphanFilter),
+    ScheduledMeetingModel.deleteMany(orphanFilter),
   ]);
 
   return {

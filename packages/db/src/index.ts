@@ -9,7 +9,7 @@
 // Mongoose 9 no longer exports a public filter type; derive one from a model
 // with `Parameters<typeof SomeModel.find>[0]` where a filter has to be named.
 export type { HydratedDocument, Model, UpdateQuery } from "mongoose";
-export { isValidObjectId, Types } from "mongoose";
+export { isValidObjectId, Types, trusted } from "mongoose";
 export * from "./cascade";
 export * from "./connect";
 export * from "./models/index";
