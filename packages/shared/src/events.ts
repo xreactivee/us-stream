@@ -149,8 +149,14 @@ export function topicFor(event: DataChannelEvent): DataTopic {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-export function encodeEvent(event: DataChannelEvent): Uint8Array {
-  return encoder.encode(JSON.stringify(event));
+/**
+ * The copy is deliberate. `TextEncoder` returns a view over an
+ * `ArrayBufferLike`, which could be a `SharedArrayBuffer`, and LiveKit's
+ * `publishData` accepts only a plain `ArrayBuffer` view. Copying a chat-sized
+ * payload costs nothing and keeps the type honest instead of asserting it away.
+ */
+export function encodeEvent(event: DataChannelEvent): Uint8Array<ArrayBuffer> {
+  return new Uint8Array(encoder.encode(JSON.stringify(event)));
 }
 
 /**

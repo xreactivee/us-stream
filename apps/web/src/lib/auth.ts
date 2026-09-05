@@ -19,7 +19,16 @@ import { env } from "@/env";
 const globalForAuth = globalThis as unknown as { usStreamAuthClient?: MongoClient };
 
 const client =
-  globalForAuth.usStreamAuthClient ?? new MongoClient(env.MONGODB_URI, { maxPoolSize: 5 });
+  globalForAuth.usStreamAuthClient ??
+  new MongoClient(env.MONGODB_URI, {
+    maxPoolSize: 5,
+    // A pool left idle overnight gets its sockets dropped somewhere in the
+    // middle; without these the first request afterwards fails outright
+    // instead of reconnecting.
+    serverSelectionTimeoutMS: 10_000,
+    retryReads: true,
+    retryWrites: true,
+  });
 globalForAuth.usStreamAuthClient = client;
 
 const googleConfigured = Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET);

@@ -11,13 +11,22 @@ import { Schema, type Types } from "mongoose";
 import { defineModel } from "./define";
 
 export interface Message {
-  _id: Types.ObjectId;
+  /**
+   * A UUID generated on the sending client, used as the document's `_id`.
+   *
+   * The same id travels over the data channel and into storage, so the sender
+   * can render optimistically, receivers can discard a duplicate frame, and a
+   * retried write updates the same document instead of creating a second one.
+   * That is worth more here than the ordering an ObjectId would give, and the
+   * `meetingId + createdAt` index already provides the ordering.
+   */
+  _id: string;
   meetingId: Types.ObjectId;
   senderIdentity: string;
   senderName: string;
   body: string;
   kind: "text" | "system";
-  replyToId: Types.ObjectId | null;
+  replyToId: string | null;
   /** Set for private messages; `null` for messages sent to the whole room. */
   toIdentity: string | null;
   createdAt: Date;
@@ -25,19 +34,17 @@ export interface Message {
 
 const messageSchema = new Schema<Message>(
   {
-    // Generated on the sending client so the live event and the stored
-    // document share an id and a replayed message cannot duplicate.
-    _id: { type: Schema.Types.ObjectId, required: true },
+    _id: { type: String, required: true },
     meetingId: { type: Schema.Types.ObjectId, required: true },
     senderIdentity: { type: String, required: true },
     senderName: { type: String, required: true },
     body: { type: String, required: true },
     kind: { type: String, enum: ["text", "system"], required: true, default: "text" },
-    replyToId: { type: Schema.Types.ObjectId, default: null },
+    replyToId: { type: String, default: null },
     toIdentity: { type: String, default: null },
     createdAt: { type: Date, required: true, default: Date.now },
   },
-  { collection: "messages" },
+  { collection: "messages", _id: false },
 );
 
 messageSchema.index({ meetingId: 1, createdAt: 1 });

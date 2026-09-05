@@ -1,27 +1,47 @@
 "use client";
 
 import { useLocalParticipant } from "@livekit/components-react";
-import { Mic, MicOff, MonitorUp, PhoneOff, Users, Video, VideoOff } from "lucide-react";
+import type { ReactionEmoji } from "@us-stream/shared";
+import {
+  Hand,
+  MessageSquare,
+  Mic,
+  MicOff,
+  MonitorUp,
+  PhoneOff,
+  Users,
+  Video,
+  VideoOff,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
+import { ReactionPicker } from "./reaction-picker";
 
 export function ControlBar({
-  panelOpen,
-  onTogglePanel,
+  openPanel,
+  onOpenPanel,
   onLeave,
   pushToTalkActive,
+  handRaised,
+  onToggleHand,
+  onReact,
+  unreadCount,
 }: {
-  panelOpen: boolean;
-  onTogglePanel: () => void;
+  openPanel: "participants" | "chat" | null;
+  onOpenPanel: (panel: "participants" | "chat" | null) => void;
   onLeave: () => void;
   pushToTalkActive: boolean;
+  handRaised: boolean;
+  onToggleHand: () => void;
+  onReact: (emoji: ReactionEmoji) => void;
+  unreadCount: number;
 }) {
   const t = useTranslations("room");
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant();
 
   return (
-    <div className="flex items-center justify-center gap-2">
+    <div className="flex flex-wrap items-center justify-center gap-2">
       <ControlButton
         active={isMicrophoneEnabled}
         label={isMicrophoneEnabled ? t("micOff") : t("micOn")}
@@ -54,13 +74,34 @@ export function ControlBar({
         }
       />
 
+      <ReactionPicker onSelect={onReact} />
+
       <ControlButton
-        active={panelOpen}
+        active={handRaised}
+        highlightWhenActive
+        label={handRaised ? t("lowerHand") : t("raiseHand")}
+        OnIcon={Hand}
+        OffIcon={Hand}
+        onClick={onToggleHand}
+      />
+
+      <ControlButton
+        active={openPanel === "chat"}
+        highlightWhenActive
+        label={t("chat")}
+        OnIcon={MessageSquare}
+        OffIcon={MessageSquare}
+        badge={unreadCount}
+        onClick={() => onOpenPanel(openPanel === "chat" ? null : "chat")}
+      />
+
+      <ControlButton
+        active={openPanel === "participants"}
         highlightWhenActive
         label={t("participants")}
         OnIcon={Users}
         OffIcon={Users}
-        onClick={onTogglePanel}
+        onClick={() => onOpenPanel(openPanel === "participants" ? null : "participants")}
       />
 
       <button
@@ -84,6 +125,7 @@ function ControlButton({
   onClick,
   highlightWhenActive = false,
   pulsing = false,
+  badge = 0,
 }: {
   active: boolean;
   label: string;
@@ -93,6 +135,7 @@ function ControlButton({
   /** For toggles where "on" is an action in progress rather than the norm. */
   highlightWhenActive?: boolean;
   pulsing?: boolean;
+  badge?: number;
 }) {
   const Icon = active ? OnIcon : OffIcon;
 
@@ -104,7 +147,7 @@ function ControlButton({
       aria-pressed={active}
       title={label}
       className={cn(
-        "grid size-12 place-items-center rounded-full transition-colors",
+        "relative grid size-12 place-items-center rounded-full transition-colors",
         highlightWhenActive
           ? active
             ? "bg-primary text-primary-foreground"
@@ -116,6 +159,12 @@ function ControlButton({
       )}
     >
       <Icon className="size-5" />
+
+      {badge > 0 ? (
+        <span className="tabular absolute -top-0.5 -right-0.5 grid min-w-5 place-items-center rounded-full bg-live px-1 text-[0.625rem] leading-5 text-white">
+          {badge > 99 ? "99+" : badge}
+        </span>
+      ) : null}
     </button>
   );
 }

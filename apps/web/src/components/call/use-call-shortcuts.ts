@@ -23,7 +23,13 @@ function isTyping(target: EventTarget | null): boolean {
  * begin with — holding space while already unmuted must not mute you on
  * release, which would be the opposite of what the key is for.
  */
-export function useCallShortcuts({ onTogglePanel }: { onTogglePanel: () => void }) {
+export function useCallShortcuts({
+  onOpenPanel,
+}: {
+  onOpenPanel: (
+    update: (current: "participants" | "chat" | null) => "participants" | "chat" | null,
+  ) => void;
+}) {
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant();
   const [pushToTalkActive, setPushToTalkActive] = useState(false);
@@ -62,7 +68,11 @@ export function useCallShortcuts({ onTogglePanel }: { onTogglePanel: () => void 
           break;
         case "p":
           event.preventDefault();
-          onTogglePanel();
+          onOpenPanel((current) => (current === "participants" ? null : "participants"));
+          break;
+        case "c":
+          event.preventDefault();
+          onOpenPanel((current) => (current === "chat" ? null : "chat"));
           break;
         default:
           break;
@@ -84,7 +94,7 @@ export function useCallShortcuts({ onTogglePanel }: { onTogglePanel: () => void 
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, localParticipant, onTogglePanel]);
+  }, [isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled, localParticipant, onOpenPanel]);
 
   return { pushToTalkActive };
 }

@@ -11,6 +11,7 @@ import { env } from "@/env";
 import { connectDb } from "@/lib/db";
 import { GUEST_COOKIE_NAME, issueGuestToken, verifyGuestToken } from "@/lib/guest";
 import { createAccessToken, livekitRoomName, roomService } from "@/lib/livekit";
+import { ensureActiveMeeting, recordParticipantJoin } from "@/lib/meetings";
 import { verifyRoomPassword } from "@/lib/password";
 import { getRoomBySlug, roleForUser } from "@/lib/rooms";
 import { getSession } from "@/lib/session";
@@ -130,6 +131,12 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
       return reject("denied");
     }
   }
+
+  // Open the meeting here rather than waiting for LiveKit's `room_started`
+  // webhook: chat needs something to attach itself to, and the webhook needs a
+  // publicly reachable service that a local setup does not have.
+  const meeting = await ensureActiveMeeting(room._id);
+  await recordParticipantJoin(meeting._id, { identity, userId, displayName, role });
 
   const token = await createAccessToken({ roomName, identity, displayName, role, userId });
 
