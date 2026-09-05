@@ -8,6 +8,7 @@
     "./models": "./src/models/index.ts"
   },
   "scripts": {
+    "db:check": "tsx src/scripts/check-connection.ts",
     "db:indexes": "tsx src/scripts/sync-indexes.ts",
     "typecheck": "tsc --noEmit"
   },

@@ -51,7 +51,8 @@ Without Docker, point `MONGODB_URI` at a MongoDB Atlas cluster and `NEXT_PUBLIC_
 phase 5.
 
 ```bash
-pnpm db:indexes   # push the schemas' indexes to the cluster
+pnpm db:check     # confirm MONGODB_URI actually reaches a cluster
+pnpm db:indexes   # push the schemas' indexes to it
 pnpm dev          # web on :3000, realtime on :3001
 ```
 
@@ -70,6 +71,7 @@ longer declared, so the cluster ends up matching the schemas exactly.
 | `pnpm lint:fix`   | Biome check with fixes and import sorting applied    |
 | `pnpm test`       | Vitest unit tests                                    |
 | `pnpm test:e2e`   | Playwright, with fake camera and microphone devices  |
+| `pnpm db:check`   | Verifies `MONGODB_URI` reaches a cluster and reports it |
 | `pnpm db:indexes` | Synchronises every model's indexes with the cluster  |
 
 ## Conventions
