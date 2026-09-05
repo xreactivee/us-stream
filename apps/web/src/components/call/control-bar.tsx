@@ -3,6 +3,7 @@
 import { useLocalParticipant } from "@livekit/components-react";
 import type { ReactionEmoji } from "@us-stream/shared";
 import {
+  ClipboardList,
   Hand,
   MessageSquare,
   Mic,
@@ -27,8 +28,8 @@ export function ControlBar({
   onReact,
   unreadCount,
 }: {
-  openPanel: "participants" | "chat" | null;
-  onOpenPanel: (panel: "participants" | "chat" | null) => void;
+  openPanel: "participants" | "chat" | "engage" | null;
+  onOpenPanel: (panel: "participants" | "chat" | "engage" | null) => void;
   onLeave: () => void;
   pushToTalkActive: boolean;
   handRaised: boolean;
@@ -93,6 +94,15 @@ export function ControlBar({
         OffIcon={MessageSquare}
         badge={unreadCount}
         onClick={() => onOpenPanel(openPanel === "chat" ? null : "chat")}
+      />
+
+      <ControlButton
+        active={openPanel === "engage"}
+        highlightWhenActive
+        label={t("polls")}
+        OnIcon={ClipboardList}
+        OffIcon={ClipboardList}
+        onClick={() => onOpenPanel(openPanel === "engage" ? null : "engage")}
       />
 
       <ControlButton

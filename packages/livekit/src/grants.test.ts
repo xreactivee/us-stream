@@ -1,6 +1,6 @@
 import { ROLES } from "@us-stream/shared";
 import { describe, expect, it } from "vitest";
-import { grantsFor, livekitRoomName } from "./livekit-grants";
+import { grantsFor, livekitRoomName } from "./index";
 
 const ROOM = "room_abc123";
 

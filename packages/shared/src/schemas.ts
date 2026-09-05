@@ -2,10 +2,17 @@
 
 import { z } from "zod";
 import {
+  BREAKOUT_MAX_ROOMS,
+  BREAKOUT_MIN_ROOMS,
   DISPLAY_NAME_MAX_LENGTH,
   DISPLAY_NAME_MIN_LENGTH,
   HARD_MAX_PARTICIPANTS,
   LOCALES,
+  POLL_MAX_OPTIONS,
+  POLL_MIN_OPTIONS,
+  POLL_OPTION_MAX_LENGTH,
+  POLL_QUESTION_MAX_LENGTH,
+  QUESTION_MAX_LENGTH,
   ROOM_NAME_MAX_LENGTH,
   ROOM_NAME_MIN_LENGTH,
   ROOM_PASSWORD_MAX_LENGTH,
@@ -97,6 +104,45 @@ export const moderateRoomSchema = z.discriminatedUnion("action", [
   z.object({ action: z.literal("setLock"), locked: z.boolean() }),
 ]);
 export type ModerateRoomInput = z.infer<typeof moderateRoomSchema>;
+
+export const breakoutRoomSchema = z.object({
+  count: z.number().int().min(BREAKOUT_MIN_ROOMS).max(BREAKOUT_MAX_ROOMS),
+  /** `null` leaves the breakouts open until the host recalls everyone. */
+  durationMinutes: z
+    .number()
+    .int()
+    .min(1)
+    .max(24 * 60)
+    .nullable(),
+});
+export type BreakoutRoomInput = z.infer<typeof breakoutRoomSchema>;
+
+export const createPollSchema = z.object({
+  question: z.string().trim().min(1).max(POLL_QUESTION_MAX_LENGTH),
+  options: z
+    .array(z.string().trim().min(1).max(POLL_OPTION_MAX_LENGTH))
+    .min(POLL_MIN_OPTIONS)
+    .max(POLL_MAX_OPTIONS),
+  allowMultiple: z.boolean().default(false),
+  isAnonymous: z.boolean().default(true),
+});
+export type CreatePollInput = z.infer<typeof createPollSchema>;
+
+export const votePollSchema = z.object({
+  optionIndexes: z
+    .array(
+      z
+        .number()
+        .int()
+        .min(0)
+        .max(POLL_MAX_OPTIONS - 1),
+    )
+    .min(1),
+});
+
+export const askQuestionSchema = z.object({
+  body: z.string().trim().min(1).max(QUESTION_MAX_LENGTH),
+});
 
 export const updatePreferencesSchema = z.object({
   locale: z.enum(LOCALES).optional(),

@@ -30,6 +30,28 @@ export function outranks(actor: Role, target: Role): boolean {
   return RANK[actor] > RANK[target];
 }
 
+/**
+ * Reads the role out of a LiveKit participant's metadata.
+ *
+ * The metadata is written by the token endpoint and participants cannot change
+ * their own, so it is trustworthy — but it still arrives as a string over the
+ * network, so anything unrecognised falls back to the least privileged role
+ * rather than being believed. Used on both the server and the client, hence
+ * living here rather than in either.
+ */
+export function roleFromMetadata(metadata: string | undefined | null): Role {
+  if (!metadata) {
+    return "guest";
+  }
+
+  try {
+    const parsed = JSON.parse(metadata) as { role?: unknown };
+    return isRole(parsed.role) ? parsed.role : "guest";
+  } catch {
+    return "guest";
+  }
+}
+
 export interface RoomPermissions {
   /** Publish camera and microphone tracks. */
   canPublish: boolean;

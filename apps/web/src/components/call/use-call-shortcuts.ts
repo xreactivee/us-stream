@@ -27,7 +27,9 @@ export function useCallShortcuts({
   onOpenPanel,
 }: {
   onOpenPanel: (
-    update: (current: "participants" | "chat" | null) => "participants" | "chat" | null,
+    update: (
+      current: "participants" | "chat" | "engage" | null,
+    ) => "participants" | "chat" | "engage" | null,
   ) => void;
 }) {
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =

@@ -9,21 +9,23 @@ import {
 } from "@livekit/components-react";
 import { hasAuthority, type Role } from "@us-stream/shared";
 import { ConnectionState } from "livekit-client";
-import { Hand } from "lucide-react";
+import { Hand, Split } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { BreakoutControls } from "./breakout-controls";
 import { CallStage } from "./call-stage";
 import { ChatPanel } from "./chat-panel";
 import { CollaborationSurface } from "./collaboration-surface";
 import { ControlBar } from "./control-bar";
+import { EngagementPanel } from "./engagement-panel";
 import { participantRole } from "./participant-role";
 import { ParticipantsPanel } from "./participants-panel";
 import { ReactionsOverlay } from "./reactions-overlay";
 import { useCallShortcuts } from "./use-call-shortcuts";
 import { useRoomEvents } from "./use-room-events";
 
-type Panel = "participants" | "chat" | null;
+type Panel = "participants" | "chat" | "engage" | null;
 type StageMode = "video" | "whiteboard" | "notes";
 
 const STAGE_MODES: { mode: StageMode; labelKey: "stageVideo" | "stageBoard" | "stageNotes" }[] = [
@@ -45,26 +47,33 @@ function formatElapsed(ms: number): string {
 export function CallRoom({
   slug,
   roomTitle,
+  breakoutLabel,
+  breakoutClosesAt,
   myRole,
   token,
   realtimeUrl,
   displayName,
+  onBreakoutMove,
   onLeave,
 }: {
   slug: string;
   roomTitle: string;
+  /** Set while this participant is in a breakout room. */
+  breakoutLabel: string | null;
+  breakoutClosesAt: number | null;
   myRole: Role;
   /** Reused as the credential for the collaborative documents. */
   token: string;
   realtimeUrl: string;
   displayName: string;
+  onBreakoutMove: (move: { token: string; label: string | null; closesAt: number | null }) => void;
   onLeave: () => void;
 }) {
   const t = useTranslations("room");
   const connectionState = useConnectionState();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
-  const events = useRoomEvents({ slug });
+  const events = useRoomEvents({ slug, onBreakoutMove });
 
   const stageGroup = useId();
   const [stage, setStage] = useState<StageMode>("video");
@@ -171,6 +180,19 @@ export function CallRoom({
           <span className="tabular shrink-0 text-xs text-muted-foreground">
             {formatElapsed(elapsed)}
           </span>
+
+          {breakoutLabel ? (
+            <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-signal/15 px-2 py-1 text-xs text-signal">
+              <Split className="size-3.5" aria-hidden />
+              {t("breakoutIn", { name: breakoutLabel })}
+              {/* Recomputed on every tick of the call timer above. */}
+              {breakoutClosesAt ? (
+                <span className="tabular">
+                  {formatElapsed(Math.max(0, breakoutClosesAt - Date.now()))}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
         </div>
 
         {/* Native radios so the browser supplies arrow-key navigation and the
@@ -267,14 +289,28 @@ export function CallRoom({
         {panel ? (
           <div className="flex w-80 shrink-0 flex-col border-l border-border bg-card">
             {panel === "participants" ? (
-              <ParticipantsPanel
-                onClose={() => setPanel(null)}
-                canModerate={canModerate}
-                actorOutranks={actorOutranks}
-                onModerate={moderate}
-                onMuteEveryone={muteEveryone}
-                handQueue={events.handQueue}
-              />
+              <>
+                <div className="min-h-0 flex-1">
+                  <ParticipantsPanel
+                    onClose={() => setPanel(null)}
+                    canModerate={canModerate}
+                    actorOutranks={actorOutranks}
+                    onModerate={moderate}
+                    onMuteEveryone={muteEveryone}
+                    handQueue={events.handQueue}
+                  />
+                </div>
+
+                {/* Splitting the room is a main-room action; someone already
+                    inside a breakout has nothing to split. */}
+                {canModerate && !breakoutLabel ? <BreakoutControls slug={slug} /> : null}
+              </>
+            ) : panel === "engage" ? (
+              // No wrapper header here: the panel carries its own two
+              // headings, and a third above them just repeats one of them.
+              <div className="min-h-0 flex-1">
+                <EngagementPanel slug={slug} canModerate={canModerate} />
+              </div>
             ) : (
               <>
                 <header className="flex items-center justify-between gap-2 border-b border-border px-4 py-3.5">

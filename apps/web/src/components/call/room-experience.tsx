@@ -23,6 +23,9 @@ type Phase =
       serverUrl: string;
       role: Role;
       choices: MediaChoices;
+      /** The breakout room this participant is in, or `null` for the main one. */
+      breakoutLabel: string | null;
+      breakoutClosesAt: number | null;
     }
   | { kind: "left" };
 
@@ -107,10 +110,35 @@ export function RoomExperience({
         serverUrl: payload.serverUrl,
         role: payload.role,
         choices,
+        breakoutLabel: null,
+        breakoutClosesAt: null,
       });
       setJoining(false);
     },
     [slug, knownName, displayName, askForPassword, password, preview],
+  );
+
+  /**
+   * Being sent into a breakout room, or brought back out of one.
+   *
+   * Only the token changes; the media choices and everything else about the
+   * session stay as they were, so somebody who muted themselves before the
+   * split is still muted after it.
+   */
+  const handleBreakoutMove = useCallback(
+    (move: { token: string; label: string | null; closesAt: number | null }) => {
+      setPhase((current) =>
+        current.kind === "connected"
+          ? {
+              ...current,
+              token: move.token,
+              breakoutLabel: move.label,
+              breakoutClosesAt: move.closesAt,
+            }
+          : current,
+      );
+    },
+    [],
   );
 
   if (phase.kind === "connected") {
@@ -118,6 +146,13 @@ export function RoomExperience({
 
     return (
       <LiveKitRoom
+        /*
+         * Keyed by the token so that being moved into a breakout room — or
+         * brought back — tears the connection down and builds a new one.
+         * Swapping the prop alone leaves the old room's tracks and
+         * participants behind for a moment, which reads as a glitch.
+         */
+        key={phase.token}
         token={phase.token}
         serverUrl={phase.serverUrl}
         connect
@@ -139,10 +174,13 @@ export function RoomExperience({
         <CallRoom
           slug={slug}
           roomTitle={roomTitle}
+          breakoutLabel={phase.breakoutLabel}
+          breakoutClosesAt={phase.breakoutClosesAt}
           myRole={phase.role}
           token={phase.token}
           realtimeUrl={realtimeUrl}
           displayName={knownName ?? displayName}
+          onBreakoutMove={handleBreakoutMove}
           onLeave={() => setPhase({ kind: "left" })}
         />
       </LiveKitRoom>

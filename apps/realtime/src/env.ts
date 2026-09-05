@@ -16,6 +16,11 @@ const envSchema = z.object({
 
   MONGODB_URI: z.string().min(1),
 
+  /**
+   * The same signalling URL the browser uses. The service needs it to reach
+   * LiveKit's REST API, which lives on the same host.
+   */
+  LIVEKIT_URL: z.string().min(1),
   LIVEKIT_API_KEY: z.string().min(1),
   LIVEKIT_API_SECRET: z.string().min(1),
 
@@ -36,7 +41,13 @@ const envSchema = z.object({
 
 function loadEnv() {
   // Railway injects PORT; everything else comes from the service's variables.
-  const parsed = envSchema.safeParse({ ...process.env, PORT: process.env.PORT });
+  // LIVEKIT_URL falls back to the browser-facing name so a single .env serves
+  // both apps in development.
+  const parsed = envSchema.safeParse({
+    ...process.env,
+    PORT: process.env.PORT,
+    LIVEKIT_URL: process.env.LIVEKIT_URL ?? process.env.NEXT_PUBLIC_LIVEKIT_URL,
+  });
 
   if (!parsed.success) {
     const issues = parsed.error.issues

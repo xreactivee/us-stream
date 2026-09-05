@@ -27,6 +27,7 @@
     "@tiptap/react": "^3.31.3",
     "@tiptap/starter-kit": "^3.31.3",
     "@us-stream/db": "workspace:*",
+    "@us-stream/livekit": "workspace:*",
     "@us-stream/shared": "workspace:*",
     "@vercel/functions": "^3.9.5",
     "better-auth": "^1.7.2",

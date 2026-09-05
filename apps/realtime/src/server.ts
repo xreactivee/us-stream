@@ -12,7 +12,10 @@
  */
 
 import cors from "@fastify/cors";
+import { pruneOrphans } from "@us-stream/db";
 import Fastify from "fastify";
+import { registerBreakoutRoutes } from "./breakout/route";
+import { sweepExpiredBreakouts } from "./breakout/service";
 import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
 import { registerLiveKitWebhook } from "./livekit/webhook";
@@ -35,6 +38,37 @@ await app.register(cors, {
 
 await registerLiveKitWebhook(app);
 await registerYjsRoute(app);
+registerBreakoutRoutes(app);
+
+/**
+ * The breakout countdown.
+ *
+ * Polled rather than scheduled per room: a timer held in memory is lost when
+ * the service restarts, and people who were promised they would be brought
+ * back in ten minutes should be, restart or not.
+ */
+const breakoutSweep = setInterval(() => {
+  void sweepExpiredBreakouts().catch((error) => app.log.error({ error }, "breakout sweep failed"));
+}, 15_000);
+
+/**
+ * Orphan cleanup.
+ *
+ * A room can be deleted while this service still holds its whiteboard in
+ * memory; the next snapshot then writes a document whose room is gone. A TTL
+ * index expiring a disposable room has the same effect, because it fires
+ * without running any application code. Neither is visible to anyone — nothing
+ * reads a child without its parent — but they accumulate.
+ */
+const orphanSweep = setInterval(() => {
+  void pruneOrphans()
+    .then(({ meetings, children }) => {
+      if (meetings > 0 || children > 0) {
+        app.log.info({ meetings, children }, "pruned orphaned records");
+      }
+    })
+    .catch((error) => app.log.error({ error }, "orphan sweep failed"));
+}, 10 * 60_000);
 
 app.get("/health", async () => {
   const connection = await connectDb();
@@ -57,6 +91,8 @@ async function start() {
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     app.log.info(`${signal} received, shutting down`);
+    clearInterval(breakoutSweep);
+    clearInterval(orphanSweep);
     await app.close();
     // Nobody should lose a whiteboard because the service restarted.
     await flushAll();

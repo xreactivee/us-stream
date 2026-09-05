@@ -9,5 +9,5 @@ export default defineConfig({
   sourcemap: true,
   // The workspace packages ship TypeScript source, so they are bundled in
   // rather than resolved at runtime.
-  noExternal: ["@us-stream/db", "@us-stream/shared"],
+  noExternal: ["@us-stream/db", "@us-stream/livekit", "@us-stream/shared"],
 });

@@ -16,7 +16,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {
   // The workspace packages ship TypeScript source rather than a build output,
   // so Next has to compile them itself.
-  transpilePackages: ["@us-stream/db", "@us-stream/shared"],
+  transpilePackages: ["@us-stream/db", "@us-stream/livekit", "@us-stream/shared"],
 
   // Mongoose registers models on a module-level singleton and the MongoDB
   // driver loads optional native dependencies; neither survives bundling.
