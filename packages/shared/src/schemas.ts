@@ -84,6 +84,20 @@ export const joinRoomResponseSchema = z.discriminatedUnion("status", [
 ]);
 export type JoinRoomResponse = z.infer<typeof joinRoomResponseSchema>;
 
+/**
+ * Host actions on other participants. These run on the server rather than from
+ * the browser: LiveKit's moderation API is authenticated with the project's
+ * secret, and routing through us is also where the "may this person do this to
+ * that person" check lives.
+ */
+export const moderateRoomSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("mute"), targetIdentity: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("remove"), targetIdentity: z.string().min(1).max(128) }),
+  z.object({ action: z.literal("muteAll") }),
+  z.object({ action: z.literal("setLock"), locked: z.boolean() }),
+]);
+export type ModerateRoomInput = z.infer<typeof moderateRoomSchema>;
+
 export const updatePreferencesSchema = z.object({
   locale: z.enum(LOCALES).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
