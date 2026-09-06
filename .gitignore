@@ -13,6 +13,8 @@ build/
 .env.local
 .env.*.local
 !.env.example
+# Generated for pasting into a host's dashboard. Real secrets, never committed.
+deploy-env/
 
 # test / tooling
 coverage/

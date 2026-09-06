@@ -46,26 +46,39 @@ secret is entered by hand into Vercel and the realtime host instead.
 
 ---
 
-## 2. Collect the values you will paste
+## 2. Generate the two variable lists
 
-Have these open before you start. They are the same values already in your local
-`.env`, except the two URLs, which do not exist yet.
+Neither host wants twenty values typed into a form, and typing them is where a
+deployment usually goes wrong — one transposed character in a secret produces a
+failure that looks like anything but a typo. Both can import a `.env` file
+instead, so build the two files from the one you already have:
 
-| Variable                    | Where it comes from                                     |
-| --------------------------- | ------------------------------------------------------- |
-| `MONGODB_URI`               | Atlas, unchanged                                        |
-| `NEXT_PUBLIC_LIVEKIT_URL`   | LiveKit Cloud, `wss://…livekit.cloud`, unchanged        |
-| `LIVEKIT_API_KEY`           | LiveKit Cloud, unchanged                                |
-| `LIVEKIT_API_SECRET`        | LiveKit Cloud, unchanged                                |
-| `BETTER_AUTH_SECRET`        | unchanged                                               |
-| `GUEST_TOKEN_SECRET`        | unchanged                                               |
-| `REALTIME_INTERNAL_SECRET`  | unchanged — must be **identical** on both platforms     |
-| `GOOGLE_CLIENT_ID`          | Google Cloud, unchanged                                 |
-| `GOOGLE_CLIENT_SECRET`      | Google Cloud, unchanged                                 |
-| `NEXT_PUBLIC_CONTACT_EMAIL` | an address you are willing to publish (see step 7)      |
-| `BETTER_AUTH_URL`           | the Vercel URL — step 3                                 |
-| `NEXT_PUBLIC_REALTIME_URL`  | the realtime service's URL — step 4                     |
-| `ALLOWED_ORIGINS`           | the Vercel URL — step 4                                 |
+```bash
+pnpm deploy:env https://xrs-us-stream.vercel.app wss://us-stream.onrender.com
+```
+
+The first argument is the address the browser will show. The second is the
+realtime service, and it is a **WebSocket** address — `wss://`, not `https://`.
+Neither may end in a slash; the script refuses both mistakes rather than let
+them reach a dashboard.
+
+That writes:
+
+| File                    | Import into                                                  |
+| ----------------------- | ------------------------------------------------------------ |
+| `deploy-env/vercel.env` | Vercel → Settings → Environment Variables → **Import .env**   |
+| `deploy-env/render.env` | Render → the service → Environment → **Add from .env**        |
+
+`deploy-env/` is gitignored and holds the real secrets. Import the files, then
+delete the directory if you would rather not have a second copy lying around;
+the script rebuilds it whenever you need it again.
+
+The two lists differ, which is the point of generating them rather than pasting
+the same block twice. The web app carries the auth and Google credentials the
+realtime service has no business holding. The realtime service wants
+`LIVEKIT_URL` where the web app calls the same value `NEXT_PUBLIC_LIVEKIT_URL`.
+And `ALLOWED_ORIGINS` is the realtime service's alone — it is the origin allowed
+to open a socket against it, so it holds the *web* app's address.
 
 Atlas also needs to accept connections from both platforms. Neither has fixed
 outbound addresses, so under **Network Access** add `0.0.0.0/0`. That is not as
@@ -76,38 +89,28 @@ URI. Restricting it further requires a paid VPC peering plan.
 
 ## 3. Vercel — the web app
 
-**New Project → import the repository.** Then, before deploying:
+**New Project → import the repository.** The build settings themselves are in
+`apps/web/vercel.json`, so the only thing the dashboard has to get right is
+where the app lives:
 
-- **Root Directory:** `apps/web`
-- **Include files outside of the Root Directory in the Build Step: ON.** This is
-  the setting the deploy fails on, and it sits directly under Root Directory in
-  Settings → General. With it off, Vercel uploads only `apps/web`, finds no
-  `pnpm-lock.yaml` there, falls back to npm, and npm stops at the first
-  `workspace:*` dependency it cannot resolve. Turn it on before the first build.
-- **Framework preset:** Next.js — detected automatically
-- **Build / Install / Output:** leave all three empty. The defaults run
-  `pnpm install` at the repository root and `pnpm build` in `apps/web`, which is
-  correct. The build script wraps the command in `dotenv-cli`, which simply
-  finds no `.env` on Vercel and carries on with the platform's own variables.
+- **Root Directory: `apps/web`** — not `./`. The `vercel.json` that pins the
+  framework and the package manager sits in that directory, and Vercel only
+  reads the one under the root directory it was given.
+- **Include files outside of the Root Directory in the Build Step: ON.** It sits
+  directly under Root Directory in Settings → General. Without it Vercel uploads
+  only `apps/web`, finds no `pnpm-lock.yaml` there, falls back to npm, and npm
+  stops at the first `workspace:*` dependency it cannot resolve.
+- **Build / Install / Output:** leave all three empty. `vercel.json` supplies
+  `pnpm install --frozen-lockfile`, and the package's own build script wraps
+  `next build` in `dotenv-cli`, which finds no `.env` on Vercel and carries on
+  with the platform's variables.
 
-If the toggle is on and the install still reaches for npm, put the whole
-repository in front of Vercel instead — it is the same build by a shorter route:
+Then import `deploy-env/vercel.env` from step 2 under Settings → Environment
+Variables, for all environments.
 
-- **Root Directory:** empty
-- **Build Command:** `pnpm --filter web build`
-- **Output Directory:** `apps/web/.next`
-- **Install Command:** `pnpm install --frozen-lockfile`
-
-Add every variable from step 2 **except** `NEXT_PUBLIC_REALTIME_URL` and
-`ALLOWED_ORIGINS` (that one is the realtime service's, not the web app's). For
-`BETTER_AUTH_URL` put what the deployment's address will be —
-`https://us-stream.vercel.app`, or your own domain if you attach one. It must
-have no trailing slash and it must be `https://`; the auth cookie is marked
-`secure` based on that prefix.
-
-Deploy. It will fail to load the whiteboard and the notes, because
-`NEXT_PUBLIC_REALTIME_URL` is not set yet. Everything else — signing in, opening
-a room, video, audio, screen sharing, chat — already works. Note the URL.
+Deploy. It will fail to load the whiteboard and the notes until the realtime
+service exists. Everything else — signing in, opening a room, video, audio,
+screen sharing, chat — already works.
 
 ---
 
@@ -117,17 +120,9 @@ The repository carries a `render.yaml` blueprint, so this is mostly confirming
 what it already says.
 
 **New → Blueprint → connect this repository.** Render reads `render.yaml`,
-proposes one web service called `us-stream-realtime`, and asks for the six
-values marked `sync: false`. Fill them in:
-
-| Variable                   | Value                                                    |
-| -------------------------- | -------------------------------------------------------- |
-| `MONGODB_URI`              | the same Atlas string                                    |
-| `LIVEKIT_URL`              | the same `wss://…livekit.cloud`                          |
-| `LIVEKIT_API_KEY`          | the same key                                             |
-| `LIVEKIT_API_SECRET`       | the same secret                                          |
-| `REALTIME_INTERNAL_SECRET` | **exactly** what you put on Vercel                       |
-| `ALLOWED_ORIGINS`          | your Vercel URL, e.g. `https://us-stream.vercel.app`     |
+proposes one web service called `us-stream-realtime`, and asks for the values
+marked `sync: false`. Import `deploy-env/render.env` from step 2 rather than
+typing them.
 
 Do **not** add `PORT`. Render injects it and the service reads it from there.
 
@@ -196,20 +191,16 @@ Under **Settings → Networking**, press **Generate Domain**.
 Railway does not sleep, so the two caveats above do not apply — but its free
 trial credit runs out, after which the service is a few dollars a month.
 
-## 5. Point the two at each other
+## 5. Redeploy Vercel once the realtime URL is real
 
-Back on Vercel, add:
+If you generated the variables in step 2 with the realtime URL already known,
+this is one action rather than an edit: **Deployments → the latest one →
+Redeploy**.
 
-```
-NEXT_PUBLIC_REALTIME_URL=wss://<your-realtime-domain>
-```
-
-**`wss://`, not `https://`.** It is the address of a WebSocket, and the browser
-will refuse an insecure or mistyped scheme without a useful message.
-
-Redeploy on Vercel (Deployments → the latest one → Redeploy). A `NEXT_PUBLIC_`
-variable is baked into the browser bundle at build time, so setting it is not
-enough on its own — the app has to be built again.
+A `NEXT_PUBLIC_` variable is baked into the browser bundle at build time, so
+adding or changing `NEXT_PUBLIC_REALTIME_URL` in the dashboard does nothing on
+its own — the app has to be built again. This is the single most common reason
+the whiteboard still cannot connect after everything looks correct.
 
 If you later attach a custom domain, `ALLOWED_ORIGINS` on the realtime service takes both,
 comma-separated and without spaces:
