@@ -89,28 +89,53 @@ URI. Restricting it further requires a paid VPC peering plan.
 
 ## 3. Vercel — the web app
 
-**New Project → import the repository.** The build settings themselves are in
-`apps/web/vercel.json`, so the only thing the dashboard has to get right is
-where the app lives:
+**Import the repository from GitHub. Do not use `vercel` from the command line.**
 
-- **Root Directory: `apps/web`** — not `./`. The `vercel.json` that pins the
-  framework and the package manager sits in that directory, and Vercel only
-  reads the one under the root directory it was given.
-- **Include files outside of the Root Directory in the Build Step: ON.** It sits
-  directly under Root Directory in Settings → General. Without it Vercel uploads
-  only `apps/web`, finds no `pnpm-lock.yaml` there, falls back to npm, and npm
-  stops at the first `workspace:*` dependency it cannot resolve.
-- **Build / Install / Output:** leave all three empty. `vercel.json` supplies
-  `pnpm install --frozen-lockfile`, and the package's own build script wraps
-  `next build` in `dotenv-cli`, which finds no `.env` on Vercel and carries on
-  with the platform's variables.
+That is not a style preference. A project created by running `vercel` inside
+`apps/web` is scoped to that directory for good: every deployment uploads only
+what is under it, so the workspace packages and `pnpm-lock.yaml` — both of which
+live above it — are never sent. Vercel then finds no lockfile, falls back to
+npm, and npm stops at the first `workspace:*` dependency. Setting Root Directory
+to `apps/web` afterwards does not rescue it; the path is resolved inside the
+subtree that was uploaded, so the deployment fails with `The specified Root
+Directory "apps/web" does not exist`. Both of those errors are the same mistake
+wearing different clothes.
 
-Then import `deploy-env/vercel.env` from step 2 under Settings → Environment
-Variables, for all environments.
+If a project is already in that state, delete it and import again. There is no
+setting that undoes the scoping.
+
+**New Project → Import Git Repository → this repository.** On the configuration
+screen:
+
+- **Root Directory: `apps/web`.** Press Edit next to it and pick the folder.
+  Vercel finds the Next.js app there and fills in the framework preset by
+  itself.
+- **Include files outside of the Root Directory in the Build Step: ON.** It
+  appears under Root Directory once that is set. This is what sends the rest of
+  the repository — the workspace packages and the lockfile — along with it.
+- **Build and Output Settings: leave every field empty.** `apps/web/vercel.json`
+  supplies the framework and `pnpm install --frozen-lockfile`, and it wins over
+  anything typed here.
+- **Environment Variables:** import `deploy-env/vercel.env` from step 2.
 
 Deploy. It will fail to load the whiteboard and the notes until the realtime
 service exists. Everything else — signing in, opening a room, video, audio,
 screen sharing, chat — already works.
+
+From here on a push to the default branch deploys on its own.
+
+### If you would rather use the CLI
+
+It works, but only from the **repository root** — never from `apps/web`:
+
+```bash
+cd us-stream
+vercel link
+```
+
+When it asks *In which directory is your code located?*, answer `apps/web`. That
+is the same setting as Root Directory above, and answering it from the root is
+what keeps the whole workspace in the upload.
 
 ---
 
