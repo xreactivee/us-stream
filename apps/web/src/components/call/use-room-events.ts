@@ -28,13 +28,6 @@ export interface FloatingReaction {
   senderName: string;
 }
 
-/** `room_<id>--breakout-3` reads to a participant as simply "3". */
-function labelOfBreakout(roomName: string): string | null {
-  const marker = roomName.lastIndexOf("--breakout-");
-
-  return marker > 0 ? roomName.slice(marker + "--breakout-".length) : null;
-}
-
 /**
  * Everything that is not audio or video.
  *
@@ -44,18 +37,7 @@ function labelOfBreakout(roomName: string): string | null {
  * delivers to whoever is connected right now and nothing else — a message has
  * to outlive the meeting to be worth reading afterwards.
  */
-export function useRoomEvents({
-  slug,
-  onBreakoutMove,
-}: {
-  slug: string;
-  /**
-   * Called when the server sends this participant to another room, or brings
-   * them back. Reconnecting is the caller's job because it means replacing the
-   * token the whole call is built on.
-   */
-  onBreakoutMove: (move: { token: string; label: string | null; closesAt: number | null }) => void;
-}) {
+export function useRoomEvents({ slug }: { slug: string }) {
   const room = useRoomContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [reactions, setReactions] = useState<FloatingReaction[]>([]);
@@ -143,31 +125,6 @@ export function useRoomEvents({
           });
           break;
 
-        case "breakout.move":
-          onBreakoutMove({
-            token: event.token,
-            label: labelOfBreakout(event.roomName),
-            closesAt: event.closesAt,
-          });
-          break;
-
-        case "breakout.recall":
-          onBreakoutMove({ token: event.token, label: null, closesAt: null });
-          break;
-
-        case "breakout.broadcast":
-          // A message from the host reaches every sub-room; it belongs in the
-          // conversation, marked as not coming from a participant.
-          appendMessage({
-            id: `broadcast-${event.sentAt}`,
-            senderIdentity: "system",
-            senderName: participant.name || participant.identity,
-            body: event.body,
-            toIdentity: null,
-            sentAt: event.sentAt,
-          });
-          break;
-
         case "presence.hand":
           setRaisedHands((current) => {
             const next = { ...current };
@@ -192,7 +149,7 @@ export function useRoomEvents({
     return () => {
       room.off(RoomEvent.DataReceived, handleData);
     };
-  }, [room, appendMessage, showReaction, onBreakoutMove]);
+  }, [room, appendMessage, showReaction]);
 
   // Someone who leaves cannot still have their hand up.
   useEffect(() => {

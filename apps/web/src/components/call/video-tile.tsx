@@ -46,6 +46,16 @@ export function VideoTile({
         // the short strip beside the whiteboard; a fixed avatar size collides
         // with the name label in the small one.
         "@container group relative overflow-hidden rounded-xl bg-tile text-tile-foreground transition-shadow",
+        /*
+         * `h-full` is load-bearing, not decoration.
+         *
+         * The video inside asks for `h-full` too. Without a height here that
+         * resolves against nothing, so the browser falls back to the track's
+         * own dimensions — and a shared 1080p screen then makes the tile a
+         * thousand pixels tall, pushes the call past the viewport and puts a
+         * scrollbar on a page that must never have one.
+         */
+        "h-full",
         // The on-air lamp again: the active speaker gets the amber ring.
         speaking && !isScreenShare
           ? "shadow-[inset_0_0_0_2px_var(--signal)]"

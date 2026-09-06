@@ -33,13 +33,41 @@ export function useWhiteboard(connection: YjsConnection) {
    * Undo is scoped to this client's own edits. A shared undo that could
    * reverse someone else's drawing is the fastest way to make a whiteboard
    * feel hostile.
+   *
+   * Built inside the effect that owns it rather than in a memo. A memo is not
+   * re-evaluated when React mounts, unmounts and remounts a component — which
+   * it does to every component in development — so the cleanup destroyed the
+   * manager and the remount handed the buttons the same dead object. Both
+   * buttons then did nothing at all, for the life of the page.
    */
-  const undoManager = useMemo(
-    () => new Y.UndoManager(shapesMap, { trackedOrigins: new Set([LOCAL_ORIGIN]) }),
-    [shapesMap],
-  );
+  const [undoManager, setUndoManager] = useState<Y.UndoManager | null>(null);
+  const [history, setHistory] = useState({ canUndo: false, canRedo: false });
 
-  useEffect(() => () => undoManager.destroy(), [undoManager]);
+  useEffect(() => {
+    const manager = new Y.UndoManager(shapesMap, { trackedOrigins: new Set([LOCAL_ORIGIN]) });
+
+    const sync = () =>
+      setHistory({
+        canUndo: manager.undoStack.length > 0,
+        canRedo: manager.redoStack.length > 0,
+      });
+
+    manager.on("stack-item-added", sync);
+    manager.on("stack-item-popped", sync);
+    manager.on("stack-cleared", sync);
+
+    setUndoManager(manager);
+    sync();
+
+    return () => {
+      manager.off("stack-item-added", sync);
+      manager.off("stack-item-popped", sync);
+      manager.off("stack-cleared", sync);
+      manager.destroy();
+      setUndoManager(null);
+      setHistory({ canUndo: false, canRedo: false });
+    };
+  }, [shapesMap]);
 
   useEffect(() => {
     const read = () => {
@@ -141,8 +169,10 @@ export function useWhiteboard(connection: YjsConnection) {
     eraseShapes,
     clearBoard,
     setCursor,
-    undo: () => undoManager.undo(),
-    redo: () => undoManager.redo(),
+    canUndo: history.canUndo,
+    canRedo: history.canRedo,
+    undo: () => undoManager?.undo(),
+    redo: () => undoManager?.redo(),
   };
 }
 

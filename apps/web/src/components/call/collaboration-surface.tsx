@@ -43,6 +43,6 @@ export function CollaborationSurface({
   return kind === "whiteboard" ? (
     <Whiteboard connection={connection} authorName={displayName} />
   ) : (
-    <NotesEditor connection={connection} />
+    <NotesEditor connection={connection} displayName={displayName} />
   );
 }

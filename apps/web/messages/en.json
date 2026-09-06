@@ -27,7 +27,7 @@
   "landing": {
     "badge": "Your server, your rules",
     "headline": "A meeting room you actually own.",
-    "subhead": "Video and audio, screen sharing, chat, a shared whiteboard and breakout rooms. Send the link and people join without an account.",
+    "subhead": "Video and audio, screen sharing, chat, a shared whiteboard and live polls. Send the link and people join without an account.",
     "startMeeting": "Start a meeting",
     "joinWithCode": "Join with a code",
     "codeLabel": "Room code",
@@ -42,10 +42,10 @@
       "chatBody": "Live messaging, emoji reactions, raised hands and a speaking queue.",
       "boardTitle": "Whiteboard and notes",
       "boardBody": "A whiteboard that stays with the room, and shared notes everyone writes in at once.",
-      "breakoutTitle": "Breakout rooms",
-      "breakoutBody": "Split people into sub-rooms, give them a timer, and pull everyone back with one click.",
       "pollTitle": "Polls and Q&A",
-      "pollBody": "Live poll results, questions the room can upvote, and an answered marker."
+      "pollBody": "Live poll results, questions the room can upvote, and an answered marker.",
+      "hostTitle": "Waiting room and host controls",
+      "hostBody": "Admit people one by one, mute a microphone, remove someone, lock the room."
     }
   },
   "auth": {
@@ -70,7 +70,8 @@
       "invalidCredentials": "That email and password do not match.",
       "emailTaken": "That email is already registered.",
       "weakPassword": "Passwords must be at least 8 characters.",
-      "generic": "Could not sign you in. Try again in a moment."
+      "generic": "Could not sign you in. Try again in a moment.",
+      "accountNotLinked": "This address is registered with a password. Sign in with it first, then connect Google from your dashboard."
     }
   },
   "dashboard": {
@@ -158,17 +159,6 @@
     "roleCohost": "Cohost",
     "roleMember": "Member",
     "roleGuest": "Guest",
-    "breakouts": "Breakout rooms",
-    "breakoutRoomCount": "How many rooms",
-    "breakoutDuration": "Duration (minutes)",
-    "breakoutNoLimit": "No limit",
-    "breakoutStart": "Open breakout rooms",
-    "breakoutRecall": "Bring everyone back",
-    "breakoutBroadcast": "Announce to all rooms",
-    "breakoutBroadcastPlaceholder": "Write an announcement",
-    "breakoutIn": "Breakout room {name}",
-    "breakoutOpenCount": "{count} breakout rooms open",
-    "breakoutHint": "You stay in the main room; everyone else is split between them.",
     "polls": "Polls",
     "newPoll": "New poll",
     "pollQuestion": "Question",
@@ -247,8 +237,13 @@
       "room_locked": "The room is locked and is not accepting anyone new.",
       "room_full": "The room is full.",
       "denied": "The host declined your request to join.",
-      "generic": "Could not connect. Try again in a moment."
-    }
+      "generic": "Could not connect. Try again in a moment.",
+      "name_required": "Enter your name."
+    },
+    "admissionTitle": "{count} waiting to join",
+    "admissionAdmit": "Admit",
+    "admissionDeny": "Deny",
+    "engagementFailed": "That did not go through. Try again."
   },
   "settings": {
     "title": "Settings",
@@ -304,5 +299,16 @@
     "cancelConfirm": "This scheduled meeting will be deleted. Are you sure?",
     "empty": "You have nothing scheduled.",
     "needsRoom": "Open a persistent room first."
+  },
+  "connections": {
+    "title": "Connections",
+    "subtitle": "The ways you can sign in to this account.",
+    "connect": "Connect",
+    "connected": "Connected",
+    "connectHint": "Connect it and you can sign in with Google from then on.",
+    "connectedHint": "You can sign in with Google.",
+    "disconnect": "Disconnect",
+    "disconnectConfirm": "Google will be unlinked. After this you can only sign in with your password. Are you sure?",
+    "failed": "Could not connect. Try again in a moment."
   }
 }

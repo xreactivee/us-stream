@@ -65,8 +65,6 @@ export interface RoomPermissions {
   canManageParticipants: boolean;
   /** Rename the room, set a password, lock it, toggle the waiting room. */
   canManageRoom: boolean;
-  /** Open, assign and recall breakout rooms. */
-  canManageBreakouts: boolean;
   /** Create and close polls, mark Q&A questions answered. */
   canManagePolls: boolean;
   /** Draw on the whiteboard and edit the shared notes. */
@@ -83,7 +81,6 @@ export function permissionsFor(role: Role): RoomPermissions {
     canSubscribe: true,
     canManageParticipants: isHost,
     canManageRoom: hasAuthority(role, "owner"),
-    canManageBreakouts: isHost,
     canManagePolls: isHost,
     canEditDocuments: true,
   };

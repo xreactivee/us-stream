@@ -1,13 +1,16 @@
 import { ScheduledMeetingModel, type Types, trusted } from "@us-stream/db";
 import { History, Video } from "lucide-react";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
+import { ConnectionsPanel, type ConnectionView } from "@/components/connections-panel";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { InstantMeetingButton } from "@/components/instant-meeting-button";
 import { RoomCard, type RoomSummary } from "@/components/room-card";
 import { ScheduleMeetingDialog } from "@/components/schedule-meeting-dialog";
 import { ScheduledList, type ScheduledView } from "@/components/scheduled-list";
 import { Button } from "@/components/ui/button";
+import { auth } from "@/lib/auth";
 import { connectDb } from "@/lib/db";
 import { listRoomsForUser } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
@@ -19,12 +22,16 @@ export async function generateMetadata() {
 
 export default async function DashboardPage() {
   const session = await requireSession("/dashboard");
-  const [t, tSchedule, tHistory, rooms] = await Promise.all([
+  const [t, tSchedule, tHistory, tConnections, rooms, accounts] = await Promise.all([
     getTranslations("dashboard"),
     getTranslations("schedule"),
     getTranslations("history"),
+    getTranslations("connections"),
     listRoomsForUser(session.user.id),
+    loadConnections(await headers()),
   ]);
+
+  const { connections, hasPassword } = accounts;
 
   const summaries: RoomSummary[] = rooms.map((room) => ({
     id: String(room._id),
@@ -89,8 +96,36 @@ export default async function DashboardPage() {
         <h2 className="text-lg font-semibold">{tSchedule("title")}</h2>
         <ScheduledList items={scheduled} />
       </section>
+
+      <section className="mt-12 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">{tConnections("title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{tConnections("subtitle")}</p>
+        </div>
+        <ConnectionsPanel connections={connections} canUnlink={hasPassword} />
+      </section>
     </div>
   );
+}
+
+/**
+ * The sign-in methods attached to this account.
+ *
+ * The password shows up in the same `account` collection as Google does, under
+ * the "credential" provider, which is how we know whether unlinking Google
+ * would leave somebody with no way back in.
+ */
+async function loadConnections(
+  headers: Headers,
+): Promise<{ connections: ConnectionView[]; hasPassword: boolean }> {
+  const accounts = await auth.api.listUserAccounts({ headers }).catch(() => []);
+
+  const google = accounts.find((account) => account.providerId === "google");
+
+  return {
+    connections: google ? [{ provider: "google", linkId: google.id }] : [],
+    hasPassword: accounts.some((account) => account.providerId === "credential"),
+  };
 }
 
 /**

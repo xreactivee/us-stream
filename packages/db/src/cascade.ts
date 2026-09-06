@@ -18,7 +18,6 @@
 
 import type { Types } from "mongoose";
 import { trusted } from "mongoose";
-import { BreakoutRoomModel } from "./models/breakout";
 import { DocModel } from "./models/doc";
 import { PollModel, QuestionModel } from "./models/engagement";
 import { AdmissionRequestModel, MeetingModel } from "./models/meeting";
@@ -37,7 +36,6 @@ export async function deleteMeetingsAndChildren(meetingIds: Types.ObjectId[]): P
     MessageModel.deleteMany(filter),
     PollModel.deleteMany(filter),
     QuestionModel.deleteMany(filter),
-    BreakoutRoomModel.deleteMany(filter),
   ]);
 
   await MeetingModel.deleteMany({ _id: trusted({ $in: meetingIds }) });

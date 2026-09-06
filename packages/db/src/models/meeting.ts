@@ -1,6 +1,6 @@
 /**
  * A meeting is one occupied session of a room — the span between LiveKit's
- * `room_started` and `room_finished` webhooks. Chat, polls and breakout rooms
+ * `room_started` and `room_finished` webhooks. Chat and polls
  * hang off a meeting rather than the room, so a persistent room's history stays
  * separated by occasion.
  *

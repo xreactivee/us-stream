@@ -1,10 +1,12 @@
 import { AdmissionRequestModel } from "@us-stream/db";
 import {
+  DISPLAY_NAME_MIN_LENGTH,
   GUEST_TOKEN_TTL_SECONDS,
   hasAuthority,
   type JoinRoomResponse,
   joinRoomSchema,
   roomSlugSchema,
+  sameDisplayName,
 } from "@us-stream/shared";
 import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/env";
@@ -94,17 +96,27 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
     displayName = session.user.name;
     userId = session.user.id;
   } else {
+    const requested = body.data.displayName ?? "";
     const existing = verifyGuestToken(request.cookies.get(GUEST_COOKIE_NAME)?.value ?? "");
 
-    if (existing && !body.data.displayName) {
+    /*
+     * The same guest keeps the same identity across leaving and coming back.
+     *
+     * The cookie is what makes that possible, and it is honoured whenever the
+     * name has not changed — not only when the browser sends no name at all.
+     * The lobby always sends the name it has in its field, so the narrower
+     * rule meant a fresh identity on every rejoin, and the meeting record
+     * counted one person as several.
+     */
+    if (existing && (requested === "" || sameDisplayName(existing.displayName, requested))) {
       identity = existing.id;
       displayName = existing.displayName;
     } else {
-      if (!body.data.displayName) {
-        return NextResponse.json({ error: "display_name_required" }, { status: 400 });
+      if (requested.length < DISPLAY_NAME_MIN_LENGTH) {
+        return reject("name_required", 400);
       }
 
-      const issued = issueGuestToken(body.data.displayName);
+      const issued = issueGuestToken(requested);
       identity = issued.identity.id;
       displayName = issued.identity.displayName;
       freshGuestToken = issued.token;
@@ -112,11 +124,31 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
   }
 
   if (!isHost && room.waitingRoomEnabled) {
+    /*
+     * One request per person per room, whatever its state.
+     *
+     * The filter used to include `status: "pending"`, which meant that the
+     * moment a host admitted somebody the filter stopped matching and the
+     * upsert opened a second pending request — so being let in put you
+     * straight back into the queue and the client waited forever.
+     */
     const admission = await AdmissionRequestModel.findOneAndUpdate(
-      { roomId: room._id, displayName, status: "pending" },
-      { $setOnInsert: { roomId: room._id, displayName, userId: userId ?? null } },
+      { roomId: room._id, displayName },
+      {
+        $setOnInsert: {
+          roomId: room._id,
+          displayName,
+          userId: userId ?? null,
+          status: "pending",
+          createdAt: new Date(),
+        },
+      },
       { upsert: true, new: true },
     );
+
+    if (admission.status === "denied") {
+      return reject("denied");
+    }
 
     if (admission.status === "pending") {
       const waiting = NextResponse.json<JoinRoomResponse>({
@@ -125,10 +157,6 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
       });
 
       return withGuestCookie(waiting, freshGuestToken);
-    }
-
-    if (admission.status === "denied") {
-      return reject("denied");
     }
   }
 

@@ -76,13 +76,34 @@ export function useYjsDoc({
   return connection;
 }
 
-/** Stable pastel from a name, so cursors are distinguishable but never harsh. */
-function colorFor(name: string): string {
+/**
+ * Stable pastel from a name, so cursors are distinguishable but never harsh.
+ *
+ * Returned as `#rrggbb` because Tiptap's caret extension validates the colour
+ * against exactly that pattern and silently substitutes `transparent` for
+ * anything else — an `hsl()` string included, which is why the notes carets
+ * had no colour at all.
+ */
+export function colorFor(name: string): string {
   let hash = 0;
 
   for (let index = 0; index < name.length; index += 1) {
     hash = (hash * 31 + name.charCodeAt(index)) % 360;
   }
 
-  return `hsl(${hash} 70% 55%)`;
+  return hslToHex(hash, 0.7, 0.55);
+}
+
+function hslToHex(hue: number, saturation: number, lightness: number): string {
+  const amplitude = saturation * Math.min(lightness, 1 - lightness);
+
+  const channel = (offset: number) => {
+    const k = (offset + hue / 30) % 12;
+
+    return Math.round((lightness - amplitude * Math.max(-1, Math.min(k - 3, 9 - k, 1))) * 255)
+      .toString(16)
+      .padStart(2, "0");
+  };
+
+  return `#${channel(0)}${channel(8)}${channel(4)}`;
 }

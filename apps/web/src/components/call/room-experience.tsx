@@ -1,11 +1,16 @@
 "use client";
 
 import { LiveKitRoom } from "@livekit/components-react";
-import type { JoinRoomResponse, Role } from "@us-stream/shared";
+import {
+  DISPLAY_NAME_MIN_LENGTH,
+  type JoinRoomResponse,
+  joinRoomResponseSchema,
+  type Role,
+} from "@us-stream/shared";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
-import { useCallback, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { Wordmark } from "@/components/wordmark";
@@ -16,18 +21,18 @@ import { useMediaPreview } from "./use-media-preview";
 
 type Phase =
   | { kind: "lobby" }
-  | { kind: "waiting" }
+  | { kind: "waiting"; choices: MediaChoices }
   | {
       kind: "connected";
       token: string;
       serverUrl: string;
       role: Role;
       choices: MediaChoices;
-      /** The breakout room this participant is in, or `null` for the main one. */
-      breakoutLabel: string | null;
-      breakoutClosesAt: number | null;
     }
   | { kind: "left" };
+
+/** How often someone held in the waiting room asks whether they are in yet. */
+const ADMISSION_POLL_MS = 3000;
 
 /**
  * Everything between opening a room link and being in the call.
@@ -65,9 +70,24 @@ export function RoomExperience({
 
   // A host is never asked for their own room's password.
   const askForPassword = requiresPassword && initialRole === "guest";
+  const askForName = !knownName;
 
   const join = useCallback(
     async (choices: MediaChoices) => {
+      /*
+       * Answered here, before the request, so the message lands the instant
+       * the button is pressed rather than after a round trip.
+       */
+      if (askForName && displayName.trim().length < DISPLAY_NAME_MIN_LENGTH) {
+        setErrorKey("name_required");
+        return;
+      }
+
+      if (askForPassword && password.length === 0) {
+        setErrorKey("password_required");
+        return;
+      }
+
       setJoining(true);
       setErrorKey(null);
 
@@ -75,28 +95,47 @@ export function RoomExperience({
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          displayName: knownName ? null : displayName,
+          displayName: knownName ? null : displayName.trim(),
           password: askForPassword ? password : null,
         }),
       }).catch(() => null);
 
-      const payload = (await response?.json().catch(() => null)) as JoinRoomResponse | null;
+      /*
+       * Validated rather than trusted.
+       *
+       * This used to read `payload.status` off whatever came back, so every
+       * response that was not one of the three expected shapes — a validation
+       * failure, a 404, a proxy's error page — fell through to the "connected"
+       * branch and built a Room around an undefined token. What that looks
+       * like is the call opening normally and then saying it lost its
+       * connection, which is the least informative version of every error at
+       * once.
+       */
+      const parsed = joinRoomResponseSchema.safeParse(await response?.json().catch(() => null));
 
-      if (!payload) {
+      setJoining(false);
+
+      if (!parsed.success) {
         setErrorKey("generic");
-        setJoining(false);
         return;
       }
 
+      const payload: JoinRoomResponse = parsed.data;
+
       if (payload.status === "waiting") {
-        setPhase({ kind: "waiting" });
-        setJoining(false);
+        // Kept identical while the answer is unchanged, so the poll below is
+        // not torn down and rebuilt on every tick.
+        setPhase((current) =>
+          current.kind === "waiting" ? current : { kind: "waiting", choices },
+        );
         return;
       }
 
       if (payload.status === "rejected") {
+        // A poll that comes back rejected while waiting should say so; a poll
+        // that simply has not been answered yet must not flash an error.
         setErrorKey(payload.reason);
-        setJoining(false);
+        setPhase({ kind: "lobby" });
         return;
       }
 
@@ -110,49 +149,38 @@ export function RoomExperience({
         serverUrl: payload.serverUrl,
         role: payload.role,
         choices,
-        breakoutLabel: null,
-        breakoutClosesAt: null,
       });
-      setJoining(false);
     },
-    [slug, knownName, displayName, askForPassword, password, preview],
+    [slug, knownName, displayName, askForName, askForPassword, password, preview],
   );
 
-  /**
-   * Being sent into a breakout room, or brought back out of one.
+  /*
+   * Waiting for a host to open the door.
    *
-   * Only the token changes; the media choices and everything else about the
-   * session stay as they were, so somebody who muted themselves before the
-   * split is still muted after it.
+   * The same join request is repeated rather than a status endpoint being
+   * polled: whatever the host decides, the answer has to pass every other
+   * check again anyway — the room may have been locked or filled in the
+   * meantime — and this way there is one place where joining is decided.
    */
-  const handleBreakoutMove = useCallback(
-    (move: { token: string; label: string | null; closesAt: number | null }) => {
-      setPhase((current) =>
-        current.kind === "connected"
-          ? {
-              ...current,
-              token: move.token,
-              breakoutLabel: move.label,
-              breakoutClosesAt: move.closesAt,
-            }
-          : current,
-      );
-    },
-    [],
-  );
+  const joinRef = useRef(join);
+  joinRef.current = join;
+
+  useEffect(() => {
+    if (phase.kind !== "waiting") {
+      return;
+    }
+
+    const { choices } = phase;
+    const timer = setInterval(() => void joinRef.current(choices), ADMISSION_POLL_MS);
+
+    return () => clearInterval(timer);
+  }, [phase]);
 
   if (phase.kind === "connected") {
     const { choices } = phase;
 
     return (
       <LiveKitRoom
-        /*
-         * Keyed by the token so that being moved into a breakout room — or
-         * brought back — tears the connection down and builds a new one.
-         * Swapping the prop alone leaves the old room's tracks and
-         * participants behind for a moment, which reads as a glitch.
-         */
-        key={phase.token}
         token={phase.token}
         serverUrl={phase.serverUrl}
         connect
@@ -185,8 +213,6 @@ export function RoomExperience({
         <CallRoom
           slug={slug}
           roomTitle={roomTitle}
-          breakoutLabel={phase.breakoutLabel}
-          breakoutClosesAt={phase.breakoutClosesAt}
           myRole={phase.role}
           token={phase.token}
           realtimeUrl={realtimeUrl}
@@ -198,7 +224,6 @@ export function RoomExperience({
            */
           blurEnabled={preview.choices.backgroundBlur}
           onToggleBlur={() => preview.update({ backgroundBlur: !preview.choices.backgroundBlur })}
-          onBreakoutMove={handleBreakoutMove}
           onLeave={() => setPhase({ kind: "left" })}
         />
       </LiveKitRoom>
@@ -233,22 +258,26 @@ export function RoomExperience({
         onJoin={join}
         error={errorKey ? t(`errors.${errorKey}`) : null}
         credentials={
-          knownName && !askForPassword ? null : (
+          !askForName && !askForPassword ? null : (
             <div className="space-y-4">
-              {knownName ? null : (
+              {askForName ? (
                 <Field label={t("yourName")} htmlFor={nameId}>
                   <Input
                     id={nameId}
                     value={displayName}
-                    onChange={(event) => setDisplayName(event.target.value)}
-                    minLength={2}
+                    onChange={(event) => {
+                      setDisplayName(event.target.value);
+                      setErrorKey(null);
+                    }}
+                    minLength={DISPLAY_NAME_MIN_LENGTH}
                     maxLength={40}
                     required
+                    aria-invalid={errorKey === "name_required"}
                     autoComplete="nickname"
                     placeholder={t("namePlaceholder")}
                   />
                 </Field>
-              )}
+              ) : null}
 
               {askForPassword ? (
                 <Field label={t("password")} htmlFor={passwordId}>
@@ -256,7 +285,13 @@ export function RoomExperience({
                     id={passwordId}
                     type="password"
                     value={password}
-                    onChange={(event) => setPassword(event.target.value)}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+                      setErrorKey(null);
+                    }}
+                    aria-invalid={
+                      errorKey === "password_required" || errorKey === "password_incorrect"
+                    }
                     autoComplete="off"
                     required
                   />

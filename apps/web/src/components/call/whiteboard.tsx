@@ -112,8 +112,20 @@ export function Whiteboard({
 
         <span className="mx-1 h-5 w-px bg-border" />
 
-        <ToolButton label={t("boardUndo")} active={false} onClick={board.undo} Icon={Undo2} />
-        <ToolButton label={t("boardRedo")} active={false} onClick={board.redo} Icon={Redo2} />
+        <ToolButton
+          label={t("boardUndo")}
+          active={false}
+          disabled={!board.canUndo}
+          onClick={board.undo}
+          Icon={Undo2}
+        />
+        <ToolButton
+          label={t("boardRedo")}
+          active={false}
+          disabled={!board.canRedo}
+          onClick={board.redo}
+          Icon={Redo2}
+        />
 
         <ToolButton
           label={t("boardClear")}
@@ -160,22 +172,26 @@ function ToolButton({
   onClick,
   Icon,
   destructive = false,
+  disabled = false,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
   Icon: typeof Pencil;
   destructive?: boolean;
+  /** Used by undo and redo, so an empty history looks empty. */
+  disabled?: boolean;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      disabled={disabled}
       aria-label={label}
       aria-pressed={active}
       title={label}
       className={cn(
-        "grid size-8 place-items-center rounded-md transition-colors",
+        "grid size-8 place-items-center rounded-md transition-colors disabled:pointer-events-none disabled:opacity-35",
         active
           ? "bg-primary text-primary-foreground"
           : destructive

@@ -4,7 +4,7 @@ import { CalendarDays, Download, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormatter, useTranslations } from "next-intl";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 
 export interface ScheduledView {
@@ -22,14 +22,18 @@ export function ScheduledList({ items }: { items: ScheduledView[] }) {
   const format = useFormatter();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  // Cancelled rows leave the list on confirmation, not on the server's reply.
+  const [cancelled, setCancelled] = useState<string[]>([]);
 
-  if (items.length === 0) {
+  const visible = items.filter((item) => !cancelled.includes(item.id));
+
+  if (visible.length === 0) {
     return <p className="text-sm text-muted-foreground">{t("empty")}</p>;
   }
 
   return (
     <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-      {items.map((item) => (
+      {visible.map((item) => (
         <li key={item.id} className="flex flex-wrap items-center gap-3 px-5 py-4">
           <CalendarDays className="size-4 shrink-0 text-signal" aria-hidden />
 
@@ -71,8 +75,18 @@ export function ScheduledList({ items }: { items: ScheduledView[] }) {
                   return;
                 }
 
+                setCancelled((current) => [...current, item.id]);
+
                 startTransition(async () => {
-                  await fetch(`/api/scheduled/${item.id}`, { method: "DELETE" }).catch(() => null);
+                  const response = await fetch(`/api/scheduled/${item.id}`, {
+                    method: "DELETE",
+                  }).catch(() => null);
+
+                  if (!response?.ok) {
+                    setCancelled((current) => current.filter((id) => id !== item.id));
+                    return;
+                  }
+
                   router.refresh();
                 });
               }}

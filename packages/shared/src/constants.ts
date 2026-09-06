@@ -41,19 +41,6 @@ export type ReactionEmoji = (typeof REACTION_EMOJIS)[number];
 /** How long a floating reaction stays on screen. */
 export const REACTION_LIFETIME_MS = 4000;
 
-// ---------------------------------------------------------------- breakout --
-
-export const BREAKOUT_MIN_ROOMS = 2;
-export const BREAKOUT_MAX_ROOMS = 20;
-export const BREAKOUT_DEFAULT_DURATION_MINUTES = 15;
-/** Warning pushed to participants shortly before a breakout closes. */
-export const BREAKOUT_CLOSING_WARNING_SECONDS = 60;
-
-/** Breakout rooms live as separate LiveKit rooms named after their parent. */
-export function breakoutRoomName(parentRoomName: string, index: number): string {
-  return `${parentRoomName}--breakout-${index}`;
-}
-
 // ------------------------------------------------------------------- polls --
 
 export const POLL_QUESTION_MAX_LENGTH = 300;

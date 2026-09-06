@@ -2,8 +2,7 @@
  * The in-call wire protocol.
  *
  * Everything that is not audio or video travels over LiveKit data channels:
- * chat, reactions, raised hands, host commands, breakout moves and poll
- * notifications. Both ends validate against these schemas, so the protocol has
+ * chat, reactions, raised hands, host commands and poll notifications. Both ends validate against these schemas, so the protocol has
  * exactly one definition and a malformed payload can never reach the UI.
  */
 
@@ -14,7 +13,7 @@ import { CHAT_MESSAGE_MAX_LENGTH, POLL_QUESTION_MAX_LENGTH, REACTION_EMOJIS } fr
  * LiveKit topics let a receiver filter without parsing. One topic per family of
  * events, matching the prefix of the event `type`.
  */
-export const DATA_TOPICS = ["chat", "presence", "host", "breakout", "poll"] as const;
+export const DATA_TOPICS = ["chat", "presence", "host", "poll"] as const;
 export type DataTopic = (typeof DATA_TOPICS)[number];
 
 const identity = z.string().min(1).max(128);
@@ -78,29 +77,6 @@ export const hostRoleChangedEvent = z.object({
   role: z.enum(["owner", "cohost", "member", "guest"]),
 });
 
-// ---------------------------------------------------------------- breakout --
-
-export const breakoutMoveEvent = z.object({
-  type: z.literal("breakout.move"),
-  /** LiveKit room to reconnect to. */
-  roomName: z.string().min(1),
-  /** Fresh access token for that room; short-lived, single use. */
-  token: z.string().min(1),
-  closesAt: z.number().int().positive().nullable(),
-});
-
-export const breakoutRecallEvent = z.object({
-  type: z.literal("breakout.recall"),
-  roomName: z.string().min(1),
-  token: z.string().min(1),
-});
-
-export const breakoutBroadcastEvent = z.object({
-  type: z.literal("breakout.broadcast"),
-  body: z.string().min(1).max(CHAT_MESSAGE_MAX_LENGTH),
-  sentAt: z.number().int().positive(),
-});
-
 // ------------------------------------------------------------------- polls --
 
 export const pollChangedEvent = z.object({
@@ -128,9 +104,6 @@ export const dataChannelEvent = z.discriminatedUnion("type", [
   hostRemoveEvent,
   hostSpotlightEvent,
   hostRoleChangedEvent,
-  breakoutMoveEvent,
-  breakoutRecallEvent,
-  breakoutBroadcastEvent,
   pollChangedEvent,
   questionChangedEvent,
 ]);
@@ -139,7 +112,6 @@ export type DataChannelEvent = z.infer<typeof dataChannelEvent>;
 export type ChatMessageEvent = z.infer<typeof chatMessageEvent>;
 export type ReactionEvent = z.infer<typeof reactionEvent>;
 export type HandEvent = z.infer<typeof handEvent>;
-export type BreakoutMoveEvent = z.infer<typeof breakoutMoveEvent>;
 
 /** The topic an event must be published on, derived from its `type` prefix. */
 export function topicFor(event: DataChannelEvent): DataTopic {

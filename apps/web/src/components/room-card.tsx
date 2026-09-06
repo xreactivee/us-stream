@@ -24,6 +24,10 @@ export function RoomCard({ room }: { room: RoomSummary }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [deleting, startDeleting] = useTransition();
+  // Removed from the grid on confirmation rather than on the server's reply:
+  // the decision has been made, and a card that lingers looks like a card that
+  // failed to delete.
+  const [removed, setRemoved] = useState(false);
 
   const badges = [
     room.isPersistent ? t("badgePersistent") : t("badgeTemporary"),
@@ -36,6 +40,10 @@ export function RoomCard({ room }: { room: RoomSummary }) {
     await navigator.clipboard.writeText(`${window.location.origin}/r/${room.slug}`);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  }
+
+  if (removed) {
+    return null;
   }
 
   return (
@@ -83,8 +91,16 @@ export function RoomCard({ room }: { room: RoomSummary }) {
                 return;
               }
 
+              setRemoved(true);
+
               startDeleting(async () => {
-                await deleteRoomAction(room.id);
+                const result = await deleteRoomAction(room.id).catch(() => null);
+
+                if (!result?.ok) {
+                  setRemoved(false);
+                  return;
+                }
+
                 router.refresh();
               });
             }}

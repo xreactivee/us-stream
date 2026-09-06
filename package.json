@@ -2,7 +2,7 @@
   "name": "us-stream",
   "version": "0.1.0",
   "private": true,
-  "description": "us-stream — self-hosted video conferencing: rooms, video, audio, screen sharing, chat, whiteboard and breakout rooms.",
+  "description": "us-stream — self-hosted video conferencing: rooms, video, audio, screen sharing, chat, whiteboard and polls.",
   "packageManager": "pnpm@11.25.0",
   "engines": {
     "node": ">=22"

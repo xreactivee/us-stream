@@ -12,7 +12,6 @@ import { config as loadEnv } from "dotenv";
 import { connectToDatabase, disconnectFromDatabase } from "../connect";
 import {
   AdmissionRequestModel,
-  BreakoutRoomModel,
   DocModel,
   MeetingModel,
   MessageModel,
@@ -37,7 +36,6 @@ const models = [
   MessageModel,
   PollModel,
   QuestionModel,
-  BreakoutRoomModel,
   DocModel,
   ScheduledMeetingModel,
 ];

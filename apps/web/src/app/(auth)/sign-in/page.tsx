@@ -16,7 +16,9 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
   }
 
   const t = await getTranslations("auth");
-  const next = safeNextPath((await searchParams).next);
+  const query = await searchParams;
+  const next = safeNextPath(query.next);
+  const callbackError = typeof query.error === "string" ? query.error : null;
 
   return (
     <div className="space-y-8">
@@ -29,6 +31,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/sign-in">
         mode="sign-in"
         googleEnabled={Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)}
         next={next}
+        callbackError={callbackError}
       />
     </div>
   );

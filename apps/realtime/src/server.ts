@@ -6,7 +6,7 @@
  *
  *   - Yjs synchronisation for the whiteboard and shared notes (phase 5)
  *   - LiveKit webhooks, turned into meeting and participant rows (phase 2)
- *   - Breakout room countdowns and recalls (phase 6)
+ *   - Closing meetings whose LiveKit room has gone (phase 8)
  *
  * Everything else stays in the Next.js app.
  */
@@ -14,8 +14,6 @@
 import cors from "@fastify/cors";
 import { pruneOrphans } from "@us-stream/db";
 import Fastify from "fastify";
-import { registerBreakoutRoutes } from "./breakout/route";
-import { sweepExpiredBreakouts } from "./breakout/service";
 import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
 import { registerLiveKitWebhook } from "./livekit/webhook";
@@ -39,19 +37,16 @@ await app.register(cors, {
 
 await registerLiveKitWebhook(app);
 await registerYjsRoute(app);
-registerBreakoutRoutes(app);
 
 /**
- * The two things that have to happen on a clock rather than on a request.
+ * Closing meetings that have actually finished.
  *
- * Breakouts are recalled when their time is up, and meetings are closed once
- * LiveKit no longer has a room for them. Both are polled rather than scheduled
- * in memory: a timer held in this process is lost when it restarts, and people
- * promised they would be brought back in ten minutes should be, restart or not.
+ * LiveKit's `room_finished` webhook does this too and does it faster, but it
+ * needs a publicly reachable service. Asking LiveKit which rooms are still
+ * alive reaches the same conclusion from this side, so a local setup and a
+ * misconfigured webhook both still end their meetings.
  */
 const callSweep = setInterval(() => {
-  void sweepExpiredBreakouts().catch((error) => app.log.error({ error }, "breakout sweep failed"));
-
   void sweepFinishedMeetings()
     .then((closed) => {
       if (closed > 0) {

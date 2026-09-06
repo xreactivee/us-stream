@@ -9,12 +9,11 @@ import {
 } from "@livekit/components-react";
 import { hasAuthority, type Role } from "@us-stream/shared";
 import { ConnectionState } from "livekit-client";
-import { Hand, Split } from "lucide-react";
+import { Hand } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
-import { BreakoutControls } from "./breakout-controls";
 import { CallStage } from "./call-stage";
 import { ChatPanel } from "./chat-panel";
 import { CollaborationSurface } from "./collaboration-surface";
@@ -30,6 +29,7 @@ import { useCallShortcuts } from "./use-call-shortcuts";
 import { useDocumentPip } from "./use-document-pip";
 import { useRoomEvents } from "./use-room-events";
 import { useSpeakingTime } from "./use-speaking-time";
+import { useAdmissions, WaitingRoomPanel } from "./waiting-room-panel";
 
 type Panel = "participants" | "chat" | "engage" | null;
 type StageMode = "video" | "whiteboard" | "notes";
@@ -53,22 +53,16 @@ function formatElapsed(ms: number): string {
 export function CallRoom({
   slug,
   roomTitle,
-  breakoutLabel,
-  breakoutClosesAt,
   myRole,
   token,
   realtimeUrl,
   displayName,
   blurEnabled,
   onToggleBlur,
-  onBreakoutMove,
   onLeave,
 }: {
   slug: string;
   roomTitle: string;
-  /** Set while this participant is in a breakout room. */
-  breakoutLabel: string | null;
-  breakoutClosesAt: number | null;
   myRole: Role;
   /** Reused as the credential for the collaborative documents. */
   token: string;
@@ -76,14 +70,13 @@ export function CallRoom({
   displayName: string;
   blurEnabled: boolean;
   onToggleBlur: () => void;
-  onBreakoutMove: (move: { token: string; label: string | null; closesAt: number | null }) => void;
   onLeave: () => void;
 }) {
   const t = useTranslations("room");
   const connectionState = useConnectionState();
   const participants = useParticipants();
   const { localParticipant } = useLocalParticipant();
-  const events = useRoomEvents({ slug, onBreakoutMove });
+  const events = useRoomEvents({ slug });
 
   const stageGroup = useId();
   const [stage, setStage] = useState<StageMode>("video");
@@ -121,6 +114,9 @@ export function CallRoom({
   }, [events.messages.length, panel]);
 
   const canModerate = hasAuthority(myRole, "cohost");
+
+  // Only a host is allowed to ask who is knocking, so only a host asks.
+  const admissions = useAdmissions({ slug, enabled: canModerate });
 
   /**
    * Whether the local participant may act on someone. The server checks this
@@ -178,7 +174,7 @@ export function CallRoom({
     : null;
 
   return (
-    <div className="flex h-dvh flex-col bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       {/* Plays every remote audio track. Without it a call is silent. */}
       <RoomAudioRenderer />
 
@@ -205,19 +201,6 @@ export function CallRoom({
           <span className="tabular shrink-0 text-xs text-muted-foreground">
             {formatElapsed(elapsed)}
           </span>
-
-          {breakoutLabel ? (
-            <span className="flex shrink-0 items-center gap-1.5 rounded-md bg-signal/15 px-2 py-1 text-xs text-signal">
-              <Split className="size-3.5" aria-hidden />
-              {t("breakoutIn", { name: breakoutLabel })}
-              {/* Recomputed on every tick of the call timer above. */}
-              {breakoutClosesAt ? (
-                <span className="tabular">
-                  {formatElapsed(Math.max(0, breakoutClosesAt - Date.now()))}
-                </span>
-              ) : null}
-            </span>
-          ) : null}
         </div>
 
         {/* Native radios so the browser supplies arrow-key navigation and the
@@ -273,8 +256,10 @@ export function CallRoom({
       </header>
 
       <div className="flex min-h-0 flex-1">
-        <main className="relative flex min-w-0 flex-1 flex-col gap-3 p-3">
+        <main className="relative flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-hidden p-3">
           <ConnectionNotice />
+
+          <WaitingRoomPanel pending={admissions.pending} onResolve={admissions.resolve} />
 
           {stage === "video" ? (
             pip.pipWindow ? (
@@ -341,27 +326,21 @@ export function CallRoom({
         {panel ? (
           <div className="fixed inset-0 z-40 flex flex-col border-border bg-card md:relative md:inset-auto md:z-auto md:w-80 md:shrink-0 md:border-l">
             {panel === "participants" ? (
-              <>
-                <div className="min-h-0 flex-1">
-                  <ParticipantsPanel
-                    onClose={() => setPanel(null)}
-                    canModerate={canModerate}
-                    actorOutranks={actorOutranks}
-                    onModerate={moderate}
-                    onMuteEveryone={muteEveryone}
-                    handQueue={events.handQueue}
-                  />
-                </div>
-
-                {/* Splitting the room is a main-room action; someone already
-                    inside a breakout has nothing to split. */}
-                {canModerate && !breakoutLabel ? <BreakoutControls slug={slug} /> : null}
-              </>
+              <div className="min-h-0 flex-1">
+                <ParticipantsPanel
+                  onClose={() => setPanel(null)}
+                  canModerate={canModerate}
+                  actorOutranks={actorOutranks}
+                  onModerate={moderate}
+                  onMuteEveryone={muteEveryone}
+                  handQueue={events.handQueue}
+                />
+              </div>
             ) : panel === "engage" ? (
               // No wrapper header here: the panel carries its own two
               // headings, and a third above them just repeats one of them.
               <div className="min-h-0 flex-1">
-                <EngagementPanel slug={slug} canModerate={canModerate} />
+                <EngagementPanel slug={slug} canModerate={canModerate} askedByName={displayName} />
               </div>
             ) : (
               <>

@@ -1,14 +1,14 @@
 # us-stream
 
 Self-hosted video conferencing. Rooms you can return to, video and audio, screen sharing, chat, a
-shared whiteboard, collaborative notes, breakout rooms and polls.
+shared whiteboard, collaborative notes, a waiting room and polls.
 
 ## Architecture
 
 | Piece               | Runs on       | Responsibility                                                     |
 | ------------------- | ------------- | ------------------------------------------------------------------ |
 | `apps/web`          | Vercel        | The whole UI, plus auth, room CRUD and LiveKit token minting        |
-| `apps/realtime`     | Railway       | Yjs sync, LiveKit webhooks, breakout timers — anything needing a persistent socket or a timer |
+| `apps/realtime`     | Railway       | Yjs sync, LiveKit webhooks, meeting close-out — anything needing a persistent socket or a timer |
 | LiveKit             | LiveKit Cloud | The SFU: audio, video, screen share, data channels, TURN            |
 | MongoDB             | Atlas         | Rooms, meetings, chat history, polls, document snapshots            |
 | Redis               | Railway       | Yjs pub/sub between realtime replicas (only from phase 5)           |
@@ -81,7 +81,7 @@ longer declared, so the cluster ends up matching the schemas exactly.
 - **One definition per concept.** Roles and their permissions live in `packages/shared/src/roles.ts`;
   the in-call wire protocol lives in `packages/shared/src/events.ts` and is validated on both ends.
 - **Bounded children are embedded, unbounded ones are not.** Room members, meeting participants,
-  poll votes and breakout assignments live inside their parent document because they are always read
+  and poll votes live inside their parent document because they are always read
   with it and their number is capped by the room's capacity. Chat messages get their own collection.
 - **MongoDB has no cascading deletes**, so every delete that spans documents goes through
   `packages/db/src/cascade.ts`. Nothing calls `deleteOne` on a room directly.

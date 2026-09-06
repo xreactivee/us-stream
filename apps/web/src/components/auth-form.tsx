@@ -15,6 +15,12 @@ type Mode = "sign-in" | "sign-up";
 /**
  * Better Auth returns provider-agnostic error codes. Anything unmapped falls
  * back to a generic message rather than surfacing an internal string.
+ *
+ * `USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL` is the one sign-up actually throws;
+ * the shorter `USER_ALREADY_EXISTS` comes from the admin plugin. Both are
+ * listed because a version bump could swap which one arrives here, and the
+ * cost of the wrong one is the reason this map exists: "we could not sign you
+ * in, try again" for an address that is simply already registered.
  */
 function messageKeyFor(code: string | undefined): string {
   switch (code) {
@@ -22,22 +28,37 @@ function messageKeyFor(code: string | undefined): string {
     case "INVALID_PASSWORD":
       return "invalidCredentials";
     case "USER_ALREADY_EXISTS":
+    case "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL":
       return "emailTaken";
     case "PASSWORD_TOO_SHORT":
       return "weakPassword";
+    case "ACCOUNT_NOT_LINKED":
+      return "accountNotLinked";
     default:
       return "generic";
   }
+}
+
+/** OAuth failures come back on the URL rather than in a response body. */
+function messageKeyForCallback(error: string | null): string | null {
+  if (!error) {
+    return null;
+  }
+
+  return error === "account_not_linked" ? "accountNotLinked" : "generic";
 }
 
 export function AuthForm({
   mode,
   googleEnabled,
   next,
+  callbackError = null,
 }: {
   mode: Mode;
   googleEnabled: boolean;
   next: string;
+  /** The `?error=` Better Auth adds when an OAuth round trip comes back failed. */
+  callbackError?: string | null;
 }) {
   const t = useTranslations("auth");
   const router = useRouter();
@@ -46,7 +67,11 @@ export function AuthForm({
   const passwordId = useId();
 
   const [pending, setPending] = useState(false);
-  const [errorKey, setErrorKey] = useState<string | null>(null);
+  // Without reading the callback error the page just looks like Google did
+  // nothing at all.
+  const [errorKey, setErrorKey] = useState<string | null>(() =>
+    messageKeyForCallback(callbackError),
+  );
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -69,6 +94,17 @@ export function AuthForm({
 
     if (result.error) {
       setErrorKey(messageKeyFor(result.error.code));
+      setPending(false);
+      return;
+    }
+
+    // A sign-up that comes back without a token is Better Auth's
+    // enumeration-safe answer for an address that already exists. It only
+    // appears under some configurations, but redirecting on it would send
+    // somebody to a page that immediately bounces them back with no reason
+    // given.
+    if (mode === "sign-up" && result.data && !result.data.token) {
+      setErrorKey("emailTaken");
       setPending(false);
       return;
     }

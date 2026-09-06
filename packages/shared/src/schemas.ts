@@ -2,8 +2,6 @@
 
 import { z } from "zod";
 import {
-  BREAKOUT_MAX_ROOMS,
-  BREAKOUT_MIN_ROOMS,
   DISPLAY_NAME_MAX_LENGTH,
   DISPLAY_NAME_MIN_LENGTH,
   HARD_MAX_PARTICIPANTS,
@@ -57,9 +55,15 @@ export type UpdateRoomInput = z.infer<typeof updateRoomSchema>;
 /**
  * Sent when joining. A signed-in user needs nothing but the room; a guest
  * supplies the name they want to appear under.
+ *
+ * Neither field carries its minimum length here. A body that fails to parse
+ * can only be answered with "invalid request", and the two things most likely
+ * to be wrong — an empty name, an empty password — deserve to be told apart
+ * for the person typing them. The route enforces both lengths and names the
+ * one that failed.
  */
 export const joinRoomSchema = z.object({
-  displayName: displayNameSchema.nullish(),
+  displayName: z.string().trim().max(DISPLAY_NAME_MAX_LENGTH).nullish(),
   password: z.string().max(ROOM_PASSWORD_MAX_LENGTH).nullish(),
 });
 export type JoinRoomInput = z.infer<typeof joinRoomSchema>;
@@ -76,11 +80,13 @@ export const joinRoomResponseSchema = z.discriminatedUnion("status", [
   /** The room has a waiting room and a host has not admitted this person yet. */
   z.object({
     status: z.literal("waiting"),
-    requestId: z.uuid(),
+    /** A database id, not a uuid — the admission request's own identifier. */
+    requestId: z.string().min(1).max(64),
   }),
   z.object({
     status: z.literal("rejected"),
     reason: z.enum([
+      "name_required",
       "password_required",
       "password_incorrect",
       "room_locked",
@@ -105,17 +111,12 @@ export const moderateRoomSchema = z.discriminatedUnion("action", [
 ]);
 export type ModerateRoomInput = z.infer<typeof moderateRoomSchema>;
 
-export const breakoutRoomSchema = z.object({
-  count: z.number().int().min(BREAKOUT_MIN_ROOMS).max(BREAKOUT_MAX_ROOMS),
-  /** `null` leaves the breakouts open until the host recalls everyone. */
-  durationMinutes: z
-    .number()
-    .int()
-    .min(1)
-    .max(24 * 60)
-    .nullable(),
+/** A host resolving one person's place in the waiting room. */
+export const admitParticipantSchema = z.object({
+  requestId: z.string().min(1).max(64),
+  action: z.enum(["admit", "deny"]),
 });
-export type BreakoutRoomInput = z.infer<typeof breakoutRoomSchema>;
+export type AdmitParticipantInput = z.infer<typeof admitParticipantSchema>;
 
 export const createPollSchema = z.object({
   question: z.string().trim().min(1).max(POLL_QUESTION_MAX_LENGTH),

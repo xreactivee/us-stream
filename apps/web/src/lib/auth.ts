@@ -63,6 +63,31 @@ export const auth = betterAuth({
       }
     : {},
 
+  account: {
+    /**
+     * Signing in with Google using an address that already has a password
+     * account attaches the two rather than refusing.
+     *
+     * Better Auth's default refuses, because linking a verified provider
+     * identity to a local account we never verified lets whoever registered
+     * the password first inherit the account of whoever owns the address. We
+     * do not verify addresses yet — there is no mailer — so that guard is the
+     * one thing standing between the two accounts.
+     *
+     * It is turned off deliberately: without it the only route back into an
+     * account created with a password is that same password, and somebody who
+     * signs up with Google out of habit is simply told "account not linked",
+     * which is not a thing they can act on. When the mailer lands, turn
+     * `requireEmailVerification` on above and delete
+     * `requireLocalEmailVerified` here — the guard then costs nothing.
+     */
+    accountLinking: {
+      enabled: true,
+      trustedProviders: ["google"],
+      requireLocalEmailVerified: false,
+    },
+  },
+
   user: {
     additionalFields: {
       /**

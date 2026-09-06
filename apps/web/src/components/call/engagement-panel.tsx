@@ -18,6 +18,29 @@ interface PollView {
   myVotes: number[];
 }
 
+/**
+ * The poll as it will look once the server has counted this vote.
+ *
+ * Only this client's own contribution is moved, so the guess is wrong by at
+ * most the votes that arrived from other people in the same instant — and the
+ * server's answer replaces it a moment later regardless.
+ */
+function withMyVotes(poll: PollView, optionIndexes: number[]): PollView {
+  const chosen = new Set(optionIndexes);
+  const previous = new Set(poll.myVotes);
+
+  return {
+    ...poll,
+    myVotes: optionIndexes,
+    options: poll.options.map((option) => ({
+      ...option,
+      votes:
+        option.votes + (chosen.has(option.index) ? 1 : 0) - (previous.has(option.index) ? 1 : 0),
+    })),
+    totalVoters: poll.totalVoters + (chosen.size > 0 ? 1 : 0) - (previous.size > 0 ? 1 : 0),
+  };
+}
+
 interface QuestionView {
   id: string;
   body: string;
@@ -36,13 +59,25 @@ interface QuestionView {
  * which is a database's job, not a broadcast's. The data channel only carries
  * the nudge to refetch.
  */
-export function EngagementPanel({ slug, canModerate }: { slug: string; canModerate: boolean }) {
+export function EngagementPanel({
+  slug,
+  canModerate,
+  askedByName,
+}: {
+  slug: string;
+  canModerate: boolean;
+  /** Shown under a question the moment it is asked, before the server answers. */
+  askedByName: string;
+}) {
   const t = useTranslations("room");
   const [polls, setPolls] = useState<PollView[]>([]);
   const [questions, setQuestions] = useState<QuestionView[]>([]);
   const [composing, setComposing] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const refresh = useCallback(async () => {
+    setFailed(false);
+
     const [pollResponse, questionResponse] = await Promise.all([
       fetch(`/api/rooms/${slug}/polls`).catch(() => null),
       fetch(`/api/rooms/${slug}/questions`).catch(() => null),
@@ -68,7 +103,23 @@ export function EngagementPanel({ slug, canModerate }: { slug: string; canModera
     void refresh();
   }, [refresh]);
 
+  /*
+   * Every action below moves the interface first and talks to the server
+   * second.
+   *
+   * A vote that waits for a round trip before the bar moves reads as a broken
+   * button, and the person presses it again. The server remains the authority:
+   * it answers with the poll as it really stands and that answer replaces the
+   * guess, and a request that fails outright puts back what was on screen
+   * before the press.
+   */
   async function vote(pollId: string, optionIndexes: number[]) {
+    const before = polls;
+
+    setPolls((current) =>
+      current.map((poll) => (poll.id === pollId ? withMyVotes(poll, optionIndexes) : poll)),
+    );
+
     const response = await fetch(`/api/rooms/${slug}/polls/${pollId}`, {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -78,31 +129,82 @@ export function EngagementPanel({ slug, canModerate }: { slug: string; canModera
     const payload = (await response?.json().catch(() => null)) as { poll?: PollView } | null;
 
     if (payload?.poll) {
-      setPolls((current) =>
-        current.map((poll) => (poll.id === payload.poll?.id ? payload.poll : poll)),
-      );
+      const settled = payload.poll;
+      setPolls((current) => current.map((poll) => (poll.id === settled.id ? settled : poll)));
+      return;
     }
+
+    setPolls(before);
+    setFailed(true);
   }
 
   async function closePoll(pollId: string) {
-    await fetch(`/api/rooms/${slug}/polls/${pollId}`, { method: "DELETE" }).catch(() => null);
+    const before = polls;
+
+    setPolls((current) =>
+      current.map((poll) => (poll.id === pollId ? { ...poll, isClosed: true } : poll)),
+    );
+
+    const response = await fetch(`/api/rooms/${slug}/polls/${pollId}`, { method: "DELETE" }).catch(
+      () => null,
+    );
+
+    if (!response?.ok) {
+      setPolls(before);
+      setFailed(true);
+      return;
+    }
+
     await refresh();
   }
 
   async function toggleUpvote(questionId: string) {
+    const before = questions;
+
+    setQuestions((current) =>
+      current.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              hasUpvoted: !question.hasUpvoted,
+              upvotes: question.upvotes + (question.hasUpvoted ? -1 : 1),
+            }
+          : question,
+      ),
+    );
+
     const response = await fetch(`/api/rooms/${slug}/questions/${questionId}`, {
       method: "POST",
     }).catch(() => null);
 
-    if (response?.ok) {
-      await refresh();
+    if (!response?.ok) {
+      setQuestions(before);
+      setFailed(true);
+      return;
     }
+
+    await refresh();
   }
 
   async function markAnswered(questionId: string) {
-    await fetch(`/api/rooms/${slug}/questions/${questionId}`, { method: "DELETE" }).catch(
-      () => null,
+    const before = questions;
+
+    setQuestions((current) =>
+      current.map((question) =>
+        question.id === questionId ? { ...question, isAnswered: true } : question,
+      ),
     );
+
+    const response = await fetch(`/api/rooms/${slug}/questions/${questionId}`, {
+      method: "DELETE",
+    }).catch(() => null);
+
+    if (!response?.ok) {
+      setQuestions(before);
+      setFailed(true);
+      return;
+    }
+
     await refresh();
   }
 
@@ -117,17 +219,51 @@ export function EngagementPanel({ slug, canModerate }: { slug: string; canModera
 
     form.reset();
 
-    await fetch(`/api/rooms/${slug}/questions`, {
+    const before = questions;
+    // A placeholder id, replaced the moment the refresh brings back the real
+    // row. It only has to be unlike any server id for the length of one
+    // request.
+    const pendingId = `pending-${Date.now()}`;
+
+    setQuestions((current) => [
+      ...current,
+      {
+        id: pendingId,
+        body,
+        askedByName: askedByName,
+        upvotes: 0,
+        hasUpvoted: false,
+        isAnswered: false,
+        createdAt: Date.now(),
+      },
+    ]);
+
+    const response = await fetch(`/api/rooms/${slug}/questions`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ body }),
     }).catch(() => null);
+
+    if (!response?.ok) {
+      setQuestions(before);
+      setFailed(true);
+      return;
+    }
 
     await refresh();
   }
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
+      {failed ? (
+        <p
+          className="border-b border-destructive/40 bg-destructive/10 px-4 py-2.5 text-xs text-destructive"
+          role="alert"
+        >
+          {t("engagementFailed")}
+        </p>
+      ) : null}
+
       <section className="space-y-3 border-b border-border p-4">
         <header className="flex items-center justify-between gap-2">
           <h3 className="text-sm font-semibold">{t("polls")}</h3>
@@ -142,9 +278,13 @@ export function EngagementPanel({ slug, canModerate }: { slug: string; canModera
         {composing ? (
           <PollComposer
             slug={slug}
-            onCreated={async () => {
+            onCreated={async (succeeded) => {
               setComposing(false);
-              await refresh();
+              setFailed(!succeeded);
+
+              if (succeeded) {
+                await refresh();
+              }
             }}
           />
         ) : null}
@@ -298,7 +438,13 @@ export function EngagementPanel({ slug, canModerate }: { slug: string; canModera
   );
 }
 
-function PollComposer({ slug, onCreated }: { slug: string; onCreated: () => void }) {
+function PollComposer({
+  slug,
+  onCreated,
+}: {
+  slug: string;
+  onCreated: (succeeded: boolean) => void;
+}) {
   const t = useTranslations("room");
   const [options, setOptions] = useState<string[]>(Array(POLL_MIN_OPTIONS).fill(""));
   const [allowMultiple, setAllowMultiple] = useState(false);
@@ -315,14 +461,14 @@ function PollComposer({ slug, onCreated }: { slug: string; onCreated: () => void
 
     setPending(true);
 
-    await fetch(`/api/rooms/${slug}/polls`, {
+    const response = await fetch(`/api/rooms/${slug}/polls`, {
       method: "POST",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ question, options: filled, allowMultiple, isAnonymous: true }),
     }).catch(() => null);
 
     setPending(false);
-    onCreated();
+    onCreated(Boolean(response?.ok));
   }
 
   return (

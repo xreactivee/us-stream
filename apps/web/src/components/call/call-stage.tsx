@@ -64,7 +64,7 @@ export function CallStage({
 
   if (layout === "strip") {
     return (
-      <div className="flex h-full gap-3 overflow-x-auto">
+      <div className="flex h-full gap-3 overflow-x-auto overflow-y-hidden">
         {tracks.map((trackRef) => (
           <div key={keyFor(trackRef)} className="aspect-video h-full shrink-0">
             <VideoTile
@@ -81,7 +81,7 @@ export function CallStage({
 
   if (focused) {
     return (
-      <div className="flex h-full flex-col gap-3">
+      <div className="flex h-full min-h-0 flex-col gap-3">
         <div className="min-h-0 flex-1">
           <VideoTile
             trackRef={focused}
@@ -92,7 +92,7 @@ export function CallStage({
         </div>
 
         {others.length > 0 ? (
-          <div className="flex shrink-0 gap-3 overflow-x-auto pb-1">
+          <div className="flex shrink-0 gap-3 overflow-x-auto overflow-y-hidden pb-1">
             {others.map((trackRef) => (
               <div key={keyFor(trackRef)} className="aspect-video w-44 shrink-0">
                 <VideoTile
@@ -110,7 +110,7 @@ export function CallStage({
   }
 
   return (
-    <div className={cn("grid h-full auto-rows-fr gap-3", columnsFor(tracks.length))}>
+    <div className={cn("grid h-full min-h-0 auto-rows-fr gap-3", columnsFor(tracks.length))}>
       {tracks.map((trackRef) => (
         <VideoTile
           key={keyFor(trackRef)}

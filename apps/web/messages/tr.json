@@ -27,7 +27,7 @@
   "landing": {
     "badge": "Kendi sunucunda, kendi kurallarınla",
     "headline": "Toplantı odan, senin elinde.",
-    "subhead": "Görüntülü ve sesli görüşme, ekran paylaşımı, sohbet, ortak beyaz tahta ve alt odalar. Bağlantıyı paylaş, karşı taraf hesap açmadan katılsın.",
+    "subhead": "Görüntülü ve sesli görüşme, ekran paylaşımı, sohbet, ortak beyaz tahta ve canlı anketler. Bağlantıyı paylaş, karşı taraf hesap açmadan katılsın.",
     "startMeeting": "Toplantı başlat",
     "joinWithCode": "Kodla katıl",
     "codeLabel": "Oda kodu",
@@ -42,10 +42,10 @@
       "chatBody": "Anlık mesajlaşma, emoji tepkileri, el kaldırma ve söz sırası kuyruğu.",
       "boardTitle": "Beyaz tahta ve notlar",
       "boardBody": "Odaya bağlı kalıcı beyaz tahta ve herkesin aynı anda yazdığı ortak toplantı notu.",
-      "breakoutTitle": "Alt odalar",
-      "breakoutBody": "Katılımcıları alt odalara böl, süre koy, herkesi tek tuşla ana odaya geri çağır.",
       "pollTitle": "Anket ve soru-cevap",
-      "pollBody": "Canlı anket sonuçları, oylanabilir sorular ve cevaplandı işareti."
+      "pollBody": "Canlı anket sonuçları, oylanabilir sorular ve cevaplandı işareti.",
+      "hostTitle": "Bekleme odası ve yönetim",
+      "hostBody": "Katılımcıları tek tek onayla, mikrofon kapat, odadan çıkar, odayı kilitle."
     }
   },
   "auth": {
@@ -70,7 +70,8 @@
       "invalidCredentials": "E-posta veya şifre hatalı.",
       "emailTaken": "Bu e-posta zaten kayıtlı.",
       "weakPassword": "Şifre en az 8 karakter olmalı.",
-      "generic": "Giriş yapılamadı. Biraz sonra tekrar dene."
+      "generic": "Giriş yapılamadı. Biraz sonra tekrar dene.",
+      "accountNotLinked": "Bu e-posta şifreyle kayıtlı. Önce şifrenle giriş yap, sonra panelden Google hesabını bağla."
     }
   },
   "dashboard": {
@@ -158,17 +159,6 @@
     "roleCohost": "Yardımcı",
     "roleMember": "Üye",
     "roleGuest": "Misafir",
-    "breakouts": "Alt odalar",
-    "breakoutRoomCount": "Kaç oda",
-    "breakoutDuration": "Süre (dakika)",
-    "breakoutNoLimit": "Süresiz",
-    "breakoutStart": "Alt odaları aç",
-    "breakoutRecall": "Herkesi geri çağır",
-    "breakoutBroadcast": "Tüm odalara duyuru",
-    "breakoutBroadcastPlaceholder": "Duyuru yaz",
-    "breakoutIn": "Alt oda {name}",
-    "breakoutOpenCount": "{count} alt oda açık",
-    "breakoutHint": "Sen ana odada kalırsın, diğerleri paylaştırılır.",
     "polls": "Anketler",
     "newPoll": "Yeni anket",
     "pollQuestion": "Soru",
@@ -247,8 +237,13 @@
       "room_locked": "Oda kilitli, şu an yeni katılım kabul edilmiyor.",
       "room_full": "Oda dolu.",
       "denied": "Toplantı sahibi katılımını reddetti.",
-      "generic": "Bağlanılamadı. Biraz sonra tekrar dene."
-    }
+      "generic": "Bağlanılamadı. Biraz sonra tekrar dene.",
+      "name_required": "Adını yaz."
+    },
+    "admissionTitle": "{count} kişi bekliyor",
+    "admissionAdmit": "Al",
+    "admissionDeny": "Reddet",
+    "engagementFailed": "İşlem tamamlanamadı. Tekrar dene."
   },
   "settings": {
     "title": "Ayarlar",
@@ -304,5 +299,16 @@
     "cancelConfirm": "Bu plan silinecek. Emin misin?",
     "empty": "Planlanmış toplantın yok.",
     "needsRoom": "Önce kalıcı bir oda açman gerekiyor."
+  },
+  "connections": {
+    "title": "Bağlı hesaplar",
+    "subtitle": "Bu hesaba hangi yöntemlerle girebileceğini buradan yönetirsin.",
+    "connect": "Bağla",
+    "connected": "Bağlı",
+    "connectHint": "Bağlarsan bundan sonra Google ile de giriş yapabilirsin.",
+    "connectedHint": "Google ile giriş yapabilirsin.",
+    "disconnect": "Bağlantıyı kes",
+    "disconnectConfirm": "Google bağlantısı kaldırılacak. Bundan sonra sadece şifrenle girebilirsin. Emin misin?",
+    "failed": "Bağlanamadı. Biraz sonra tekrar dene."
   }
 }

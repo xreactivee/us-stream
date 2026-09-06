@@ -1,4 +1,4 @@
-import { ClipboardList, MessagesSquare, MonitorUp, PenLine, Users, Video } from "lucide-react";
+import { ClipboardList, DoorOpen, MessagesSquare, MonitorUp, PenLine, Video } from "lucide-react";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { JoinWithCode } from "@/components/join-with-code";
@@ -12,7 +12,7 @@ const FEATURES = [
   { key: "screen", Icon: MonitorUp },
   { key: "chat", Icon: MessagesSquare },
   { key: "board", Icon: PenLine },
-  { key: "breakout", Icon: Users },
+  { key: "host", Icon: DoorOpen },
   { key: "poll", Icon: ClipboardList },
 ] as const;
 

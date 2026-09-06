@@ -7,7 +7,7 @@ import StarterKit from "@tiptap/starter-kit";
 import { Bold, Italic, List, ListOrdered } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
-import type { YjsConnection } from "./use-yjs-doc";
+import { colorFor, type YjsConnection } from "./use-yjs-doc";
 
 /**
  * Shared meeting notes.
@@ -16,7 +16,13 @@ import type { YjsConnection } from "./use-yjs-doc";
  * manager, which is why StarterKit's undo/redo is switched off: two histories
  * over one document undo each other's work.
  */
-export function NotesEditor({ connection }: { connection: YjsConnection }) {
+export function NotesEditor({
+  connection,
+  displayName,
+}: {
+  connection: YjsConnection;
+  displayName: string;
+}) {
   const t = useTranslations("room");
 
   const editor = useEditor(
@@ -25,7 +31,18 @@ export function NotesEditor({ connection }: { connection: YjsConnection }) {
       extensions: [
         StarterKit.configure({ undoRedo: false }),
         Collaboration.configure({ document: connection.doc, field: "notes" }),
-        CollaborationCaret.configure({ provider: connection.provider }),
+        /*
+         * The name has to be given here, not only on the provider.
+         *
+         * The extension writes its own `user` option into awareness when it
+         * starts, and that option defaults to a nameless, colourless object —
+         * so whatever the connection had already published was overwritten and
+         * every caret was labelled with the raw client id instead of a person.
+         */
+        CollaborationCaret.configure({
+          provider: connection.provider,
+          user: { name: displayName, color: colorFor(displayName) },
+        }),
       ],
       editorProps: {
         attributes: {
@@ -34,7 +51,7 @@ export function NotesEditor({ connection }: { connection: YjsConnection }) {
         },
       },
     },
-    [connection.doc, connection.provider],
+    [connection.doc, connection.provider, displayName],
   );
 
   return (

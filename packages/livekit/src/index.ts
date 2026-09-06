@@ -3,7 +3,7 @@
  *
  * Both servers need these: the web app issues the token that admits someone to
  * a call, and the realtime service issues the ones that move people between
- * breakout rooms. The grant mapping is the most security-sensitive code in the
+ * every room. The grant mapping is the most security-sensitive code in the
  * project, so it lives here once rather than being copied into each.
  *
  * This package holds the API secret's uses and must never be imported from the
@@ -57,13 +57,6 @@ export function livekitRoomName(roomId: string): string {
   return `room_${roomId}`;
 }
 
-/** The parent room a breakout name belongs to, or `null` if it is not one. */
-export function parentOfBreakout(roomName: string): string | null {
-  const marker = roomName.indexOf("--breakout-");
-
-  return marker > 0 ? roomName.slice(0, marker) : null;
-}
-
 export interface ParticipantMetadata {
   role: Role;
   /** Set for signed-in participants; absent for guests. */
@@ -113,5 +106,5 @@ export function createRoomService(credentials: LiveKitCredentials): RoomServiceC
   );
 }
 
-export { breakoutRoomName, roleFromMetadata } from "@us-stream/shared";
+export { roleFromMetadata } from "@us-stream/shared";
 export { DataPacket_Kind, type RoomServiceClient, type VideoGrant };

@@ -44,6 +44,11 @@ davranmaz.
 - 👤 Klavyeyle `Tab`'a bas → sol üstte **İçeriğe atla** bağlantısı çıkıyor,
   `Enter` içeriğe atlıyor
 - ⚙︎ Çıkış yap → giriş yap → oturum dönüyor
+- ⚙︎ Kayıtlı bir e-postayla **tekrar kayıt ol** → *"Bu e-posta zaten kayıtlı."*
+- 👤 Şifreyle açtığın hesabın e-postasıyla **Google ile devam et** → hata vermeden
+  aynı hesaba giriyor, bundan sonra iki yolla da girebiliyorsun
+- ⚙︎ Dashboard'da **Bağlı hesaplar** → Google karşısında **Bağla**; bağladıktan
+  sonra **Bağlı** yazıyor ve **Bağlantıyı kes** çıkıyor
 
 ## 2. Odalar
 
@@ -68,9 +73,12 @@ davranmaz.
 
 **Şifreli odaya misafir olarak** (gizli pencere):
 
-- ⚙︎ Şifresiz katıl → *"Bu oda şifreli"*
-- ⚙︎ Yanlış şifre → *"Şifre yanlış"*
-- ⚙︎ İsim girmeden → isim isteniyor
+Bunların hepsinde **oda ekranı hiç açılmamalı** — hata lobide çıkmalı.
+
+- ⚙︎ Boş isim + boş şifre → *"Adını yaz."*
+- ⚙︎ İsim var, şifre boş → *"Bu oda şifreli. Şifreyi gir."*
+- ⚙︎ İsim var, şifre yanlış → *"Şifre yanlış."*
+- ⚙︎ Giriş yapmadan, isim yazmadan katılmaya çalış → yine *"Adını yaz."*
 - ⚙︎ Doğru şifre + isim → giriyor, rolü **Misafir**
 - ⚙︎ Odanın sahibi olarak sen şifre sorulmadan giriyorsun
 
@@ -83,6 +91,8 @@ Normal pencerede sahip olarak, gizli pencerede misafir olarak aynı odaya gir.
 - 👤 Mikrofonu kapat → karşıda mikrofon-kapalı simgesi görünüyor
 - 👤 **Ekranı paylaş** → karşı taraf ekranını görüyor, paylaşım otomatik sahneyi
   alıyor. Sesli bir video paylaş → sesi de gidiyor
+- ⚙︎ Paylaşım açıkken **sayfada kaydırma çubuğu çıkmamalı** — ne dikey ne yatay.
+  Paylaşılan ekran kutusuna sığmalı, kutuyu büyütmemeli
 - 👤 **Arka planı bulanıklaştır** → arkan bulanıklaşıyor, karşı taraf da öyle
   görüyor. Tekrar bas → düzeliyor
 - 👤 **Küçük pencereye al** (Chrome/Edge) → görüşme ayrı küçük pencerede devam
@@ -118,23 +128,27 @@ Normal pencerede sahip olarak, gizli pencerede misafir olarak aynı odaya gir.
 - 👤 Karşı tarafın imleci renkli nokta + isim olarak görünüyor
 - Kalem, çizgi, dikdörtgen, elips, metin, silgi, kaydır — hepsi çalışıyor
 - Fare tekerleğiyle yakınlaş/uzaklaş → imlecin olduğu noktaya doğru
-- 👤 **Geri al** → sadece **kendi** çizimini geri alıyor, karşınınkini değil
+- ⚙︎ Hiç çizim yokken **geri al** ve **ileri al** solgun ve tıklanamaz
+- ⚙︎ Bir şey çiz → **geri al** aktifleşiyor; bas → çizim gidiyor ve **ileri al**
+  aktifleşiyor; ona bas → çizim geri geliyor
+- 👤 **Geri al** sadece **kendi** çizimini geri alıyor, karşınınkini değil
 - ⚙︎ Sayfayı tamamen yenile → çizimler geri geliyor
 - ⚙︎ **Notlar** sekmesi → yaz, kalın/italik/liste çalışıyor
-- 👤 İki pencereden aynı anda yaz → metin çakışmadan birleşiyor, karşının imleci
-  görünüyor
+- ⚙︎ İki pencereden aynı anda yaz → metin çakışmadan birleşiyor ve karşının
+  imlecinde **adı** yazıyor, kimlik numarası değil
 
-## 7. Alt odalar — üç kişi gerekiyor
+## 7. Bekleme odası — iki pencere gerekiyor
 
-Sahip + iki misafir (normal + gizli + başka bir tarayıcı).
+Bekleme odası açık bir oda kur (yeni oda açarken **Bekleme odası** anahtarı).
 
-- ⚙︎ Katılımcılar panelinin altından **Alt odaları aç**, 2 oda, 1 dakika
-- 👤 İki misafir ayrı alt odalara dağılıyor, üst barda *"Alt oda 1/2"* ve geri
-  sayım çıkıyor. **Sen ana odada kalıyorsun**
-- 👤 **Tüm odalara duyuru** yaz → alt odalardaki sohbette görünüyor
-- ⚙︎ Süre dolunca **kimse bir şey yapmadan** herkes ana odaya dönüyor
-- 👤 Tekrar aç ve **Herkesi geri çağır** → hemen dönüyorlar
-- 👤 Alt odaya girmişken mikrofon durumun aynı kalıyor (kapalıysan kapalı)
+- ⚙︎ Misafir doğru şifreyle katılıyor → *"Onay bekleniyor"* ekranında kalıyor
+- ⚙︎ Sahip penceresinde sahnenin üstünde **"1 kişi bekliyor"** kartı ve misafirin
+  adı çıkıyor, yanında **Al** ve **Reddet**
+- ⚙︎ **Al** → kart hemen kayboluyor ve misafir birkaç saniye içinde **kendiliğinden**
+  odaya giriyor, tekrar bir şey yapması gerekmiyor
+- ⚙︎ İkinci bir misafirde **Reddet** → misafirin ekranında *"Toplantı sahibi
+  katılımını reddetti."*
+- Misafir penceresinde bu kart **hiç görünmemeli**
 
 ## 8. Anket ve soru-cevap
 
@@ -144,6 +158,9 @@ Sahip + iki misafir (normal + gizli + başka bir tarayıcı).
 - ⚙︎ **Anketi kapat** → oy verilemiyor
 - ⚙︎ Soru sor, **destekle** → sayaç artıyor; tekrar bas → geri alınıyor
 - ⚙︎ Host **cevaplandı** işaretliyor → soru soluyor ve aşağı iniyor
+- ⚙︎ Bunların hepsinde ekran **beklemeden** değişmeli: oy verince çubuk anında
+  oynamalı, soru yazınca anında listeye düşmeli. Sunucu hayır derse eski hâline
+  dönüyor ve panelin üstünde kırmızı bir uyarı çıkıyor
 - Misafir penceresinde anket oluşturma ve cevaplandı işaretleme **görünmemeli**
 
 ## 9. Telefon
@@ -170,6 +187,9 @@ Bir görüşmeyi bitir ve **beş dakika bekle** — LiveKit boş odayı hemen ka
 - ⚙︎ Sohbet dökümü o toplantının mesajlarını gösteriyor
 - ⚙︎ Beyaz tahta görüntüsü çiziliyor ve üstünde *"odaya bağlıdır, toplantıya
   değil"* uyarısı var
+- ⚙︎ Aynı misafir toplantı sırasında çıkıp **aynı isimle** tekrar girdiyse
+  listede **tek satır** olmalı, iki değil (isim büyük/küçük harf ve fazla boşluk
+  farkı olsa bile)
 - 👤 Odaya üye olmayan başka bir hesapla `/m/<id>` aç → **404 almalı**
 
 ## 11. Planlanmış toplantılar
@@ -188,6 +208,11 @@ Bir görüşmeyi bitir ve **beş dakika bekle** — LiveKit boş odayı hemen ka
 Bunlar hata değil, bilinçli kararlar:
 
 - **Kayıt yok.** Faz 3'te kapsam dışı bırakıldı.
+- **Alt oda yok.** Senin isteğinle tamamen kaldırıldı.
+- **E-posta doğrulaması yok**, çünkü mail gönderen bir servis bağlı değil. Bunun
+  bir bedeli var: bir adresi şifreyle kaydeden kişi, o adresin gerçek sahibi
+  sonradan Google ile girdiğinde onunla aynı hesabı paylaşır. Mail servisi
+  bağlanınca `requireEmailVerification` açılıp bu kapanacak.
 - **Uçtan uca şifreleme yok.** Faz 7'de sonraya bırakıldı; anahtar paylaşımı için
   ayrı bir akış ve iki gerçek istemciyle test gerekiyor.
 - **PWA yok.** Telefonda düzgün çalışıyor ama ana ekrana eklenemiyor.
@@ -201,3 +226,7 @@ Bunlar hata değil, bilinçli kararlar:
 - **Webhook'lar deploy edilmeden çalışmaz.** LiveKit'in bu servise ulaşabilmesi
   gerekiyor. Toplantılar yine de kapanıyor — servis LiveKit'e hangi odaların
   yaşadığını kendisi soruyor — sadece birkaç saniye daha geç.
+
+---
+
+Deploy adımları ayrı bir belgede: [deploy.md](deploy.md).
