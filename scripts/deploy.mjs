@@ -1,22 +1,17 @@
 /**
- * Pushes the current branch, which is what deploys it.
+ * Starts a build on both hosts without pushing anything.
  *
  *   pnpm deploy
  *
- * Both hosts watch the repository and build on a push by themselves, so the
- * push is the whole job. This wraps it to refuse a dirty tree and to say what
- * happens next.
+ * `git push` already deploys — both hosts watch the repository — so this is not
+ * for shipping new commits. It is for the cases a push cannot cover: rebuilding
+ * the commit that is already on the remote after changing an environment
+ * variable, waking a service, or redeploying something that failed for a reason
+ * that has since gone away.
  *
- * **Do not fire the deploy hooks as well while auto-deploy is on.** A push and
- * a hook are two separate deploys of one commit: the second one supersedes the
- * first, the host marks the first failed or cancelled, and it emails to say so.
- * The site ends up correct and current while the inbox fills with failures for
- * commits that deployed perfectly well — which is a genuinely confusing thing
- * to debug, because nothing is actually broken.
- *
- * If auto-deploy is switched off on either host, ask for the hooks explicitly:
- *
- *   pnpm deploy --hooks
+ * It never pushes. Firing a hook on top of a push would be two deploys of one
+ * commit: the second supersedes the first, the host marks the first failed, and
+ * it emails about a commit that deployed perfectly well.
  *
  * A deploy hook is a URL that starts a build when something POSTs to it. Anyone
  * holding one can spend your build minutes, so they live in `.env` beside the
@@ -34,10 +29,6 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-
-function git(...args) {
-  return execFileSync("git", args, { cwd: root, encoding: "utf8" }).trim();
-}
 
 /** Reads `.env` without pulling in a dependency for six lines of parsing. */
 function readEnv() {
@@ -64,48 +55,60 @@ function readEnv() {
   return entries;
 }
 
+/**
+ * Commits sitting locally that the hosts cannot see.
+ *
+ * Worth saying out loud rather than blocking on: a hook builds whatever is on
+ * the remote, so unpushed work is simply not in the build, and being told that
+ * beats wondering why the change did not appear.
+ */
+function unpushedCount() {
+  try {
+    const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {
+      cwd: root,
+      encoding: "utf8",
+    }).trim();
+
+    const range = `origin/${branch}..HEAD`;
+    const commits = execFileSync("git", ["rev-list", "--count", range], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+
+    return { branch, ahead: Number(commits) };
+  } catch {
+    // No upstream, or no git at all. Neither stops a deploy.
+    return { branch: null, ahead: 0 };
+  }
+}
+
 const env = { ...readEnv(), ...process.env };
-const branch = git("rev-parse", "--abbrev-ref", "HEAD");
 
-// Deploying a tree that does not match the commit means shipping something
-// nobody can reproduce from the repository.
-const dirty = git("status", "--porcelain");
-
-if (dirty) {
-  console.error("Uncommitted changes. Commit or stash them first:\n");
-  console.error(dirty);
-  process.exit(1);
-}
-
-console.log(`Pushing ${branch}…`);
-execFileSync("git", ["push", "origin", branch], { cwd: root, stdio: "inherit" });
-
-// Off unless asked for. Firing a hook on top of the push the host is already
-// reacting to means two deploys of one commit, and a failure email for the one
-// that loses.
-const useHooks = process.argv.slice(2).includes("--hooks");
-
-const hooks = useHooks
-  ? [
-      ["Vercel", env.VERCEL_DEPLOY_HOOK_URL],
-      ["Render", env.RENDER_DEPLOY_HOOK_URL],
-    ].filter(([, url]) => url)
-  : [];
-
-if (!useHooks) {
-  console.log(
-    "\nPushed. Both hosts build this on their own from here.\n" +
-      "If either has auto-deploy switched off, run `pnpm deploy --hooks` instead.",
-  );
-  process.exit(0);
-}
+const hooks = [
+  ["Vercel", env.VERCEL_DEPLOY_HOOK_URL],
+  ["Render", env.RENDER_DEPLOY_HOOK_URL],
+].filter(([, url]) => url);
 
 if (hooks.length === 0) {
   console.error(
-    "\n--hooks was asked for but neither VERCEL_DEPLOY_HOOK_URL nor\n" +
-      "RENDER_DEPLOY_HOOK_URL is set in .env — see the top of this file.",
+    "No deploy hooks configured. Put VERCEL_DEPLOY_HOOK_URL and/or\n" +
+      "RENDER_DEPLOY_HOOK_URL in .env — see the top of this file for where each\n" +
+      "one is created.",
   );
   process.exit(1);
+}
+
+const { branch, ahead } = unpushedCount();
+
+if (ahead > 0) {
+  console.warn(
+    `Note: ${ahead} commit${ahead === 1 ? "" : "s"} on ${branch} ${
+      ahead === 1 ? "is" : "are"
+    } not pushed.\n` +
+      "The hooks build what is on the remote, so those changes are not in this build.\n" +
+      "Push them if you meant to ship them — the push deploys on its own.\n",
+  );
 }
 
 let failed = false;
