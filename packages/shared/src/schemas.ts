@@ -144,6 +144,19 @@ export const askQuestionSchema = z.object({
   body: z.string().trim().min(1).max(QUESTION_MAX_LENGTH),
 });
 
+export const scheduleMeetingSchema = z.object({
+  roomId: z.string().min(1).max(64),
+  title: z.string().trim().min(1).max(120),
+  /** Accepts the value an `<input type="datetime-local">` produces. */
+  startsAt: z.coerce.date(),
+  durationMinutes: z
+    .number()
+    .int()
+    .min(5)
+    .max(24 * 60),
+});
+export type ScheduleMeetingInput = z.infer<typeof scheduleMeetingSchema>;
+
 export const updatePreferencesSchema = z.object({
   locale: z.enum(LOCALES).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),

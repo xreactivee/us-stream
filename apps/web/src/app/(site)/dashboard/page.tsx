@@ -1,8 +1,14 @@
-import { Video } from "lucide-react";
+import { ScheduledMeetingModel, type Types, trusted } from "@us-stream/db";
+import { History, Video } from "lucide-react";
+import Link from "next/link";
 import { getTranslations } from "next-intl/server";
 import { CreateRoomDialog } from "@/components/create-room-dialog";
 import { InstantMeetingButton } from "@/components/instant-meeting-button";
 import { RoomCard, type RoomSummary } from "@/components/room-card";
+import { ScheduleMeetingDialog } from "@/components/schedule-meeting-dialog";
+import { ScheduledList, type ScheduledView } from "@/components/scheduled-list";
+import { Button } from "@/components/ui/button";
+import { connectDb } from "@/lib/db";
 import { listRoomsForUser } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
 
@@ -13,8 +19,10 @@ export async function generateMetadata() {
 
 export default async function DashboardPage() {
   const session = await requireSession("/dashboard");
-  const [t, rooms] = await Promise.all([
+  const [t, tSchedule, tHistory, rooms] = await Promise.all([
     getTranslations("dashboard"),
+    getTranslations("schedule"),
+    getTranslations("history"),
     listRoomsForUser(session.user.id),
   ]);
 
@@ -31,6 +39,11 @@ export default async function DashboardPage() {
     isOwner: room.ownerId === session.user.id,
   }));
 
+  const scheduled = await loadUpcoming(
+    rooms.map((room) => ({ id: room._id, name: room.name, slug: room.slug })),
+    session.user.id,
+  );
+
   return (
     <div className="mx-auto max-w-6xl px-6 py-14">
       <header className="flex flex-wrap items-end justify-between gap-6">
@@ -39,7 +52,16 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-muted-foreground">{t("subtitle")}</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="ghost">
+            <Link href="/history">
+              <History />
+              {tHistory("title")}
+            </Link>
+          </Button>
+          <ScheduleMeetingDialog
+            rooms={summaries.map((room) => ({ id: room.id, name: room.name }))}
+          />
           <CreateRoomDialog />
           <InstantMeetingButton />
         </div>
@@ -62,6 +84,56 @@ export default async function DashboardPage() {
           ))}
         </section>
       )}
+
+      <section className="mt-12 space-y-4">
+        <h2 className="text-lg font-semibold">{tSchedule("title")}</h2>
+        <ScheduledList items={scheduled} />
+      </section>
     </div>
   );
+}
+
+/**
+ * The next few bookings across the rooms this person belongs to.
+ *
+ * Anything already past is left out rather than deleted: a meeting that
+ * happened is history, and the record is small enough not to matter.
+ */
+async function loadUpcoming(
+  rooms: { id: Types.ObjectId; name: string; slug: string }[],
+  userId: string,
+): Promise<ScheduledView[]> {
+  if (rooms.length === 0) {
+    return [];
+  }
+
+  await connectDb();
+
+  const byId = new Map(rooms.map((room) => [String(room.id), room]));
+
+  const upcoming = await ScheduledMeetingModel.find({
+    roomId: trusted({ $in: rooms.map((room) => room.id) }),
+    startsAt: trusted({ $gte: new Date() }),
+  })
+    .sort({ startsAt: 1 })
+    .limit(20)
+    .lean();
+
+  return upcoming.flatMap((entry) => {
+    const room = byId.get(entry.roomId.toString());
+
+    return room
+      ? [
+          {
+            id: String(entry._id),
+            title: entry.title,
+            roomName: room.name,
+            roomSlug: room.slug,
+            startsAt: entry.startsAt.getTime(),
+            durationMinutes: entry.durationMinutes,
+            isMine: entry.createdById === userId,
+          },
+        ]
+      : [];
+  });
 }

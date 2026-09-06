@@ -12,18 +12,24 @@ import { ConnectionState } from "livekit-client";
 import { Hand, Split } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 import { BreakoutControls } from "./breakout-controls";
 import { CallStage } from "./call-stage";
 import { ChatPanel } from "./chat-panel";
 import { CollaborationSurface } from "./collaboration-surface";
+import { ConnectionNotice } from "./connection-notice";
 import { ControlBar } from "./control-bar";
 import { EngagementPanel } from "./engagement-panel";
+import { LiveAnnouncer } from "./live-announcer";
 import { participantRole } from "./participant-role";
 import { ParticipantsPanel } from "./participants-panel";
 import { ReactionsOverlay } from "./reactions-overlay";
+import { useBackgroundBlur } from "./use-background-blur";
 import { useCallShortcuts } from "./use-call-shortcuts";
+import { useDocumentPip } from "./use-document-pip";
 import { useRoomEvents } from "./use-room-events";
+import { useSpeakingTime } from "./use-speaking-time";
 
 type Panel = "participants" | "chat" | "engage" | null;
 type StageMode = "video" | "whiteboard" | "notes";
@@ -53,6 +59,8 @@ export function CallRoom({
   token,
   realtimeUrl,
   displayName,
+  blurEnabled,
+  onToggleBlur,
   onBreakoutMove,
   onLeave,
 }: {
@@ -66,6 +74,8 @@ export function CallRoom({
   token: string;
   realtimeUrl: string;
   displayName: string;
+  blurEnabled: boolean;
+  onToggleBlur: () => void;
   onBreakoutMove: (move: { token: string; label: string | null; closesAt: number | null }) => void;
   onLeave: () => void;
 }) {
@@ -85,6 +95,13 @@ export function CallRoom({
   const [unread, setUnread] = useState(0);
   const seenCount = useRef(0);
 
+  const [blurSupported, setBlurSupported] = useState(true);
+  const onBlurUnsupported = useCallback(() => setBlurSupported(false), []);
+
+  useBackgroundBlur({ enabled: blurEnabled, onUnsupported: onBlurUnsupported });
+  useSpeakingTime({ slug });
+
+  const pip = useDocumentPip();
   const { pushToTalkActive } = useCallShortcuts({ onOpenPanel: setPanel });
 
   useEffect(() => {
@@ -164,6 +181,14 @@ export function CallRoom({
     <div className="flex h-dvh flex-col bg-background">
       {/* Plays every remote audio track. Without it a call is silent. */}
       <RoomAudioRenderer />
+
+      <LiveAnnouncer
+        reactions={events.reactions}
+        handQueueNames={events.handQueue.map(
+          (identity) =>
+            participants.find((participant) => participant.identity === identity)?.name ?? identity,
+        )}
+      />
 
       <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-3">
@@ -249,14 +274,41 @@ export function CallRoom({
 
       <div className="flex min-h-0 flex-1">
         <main className="relative flex min-w-0 flex-1 flex-col gap-3 p-3">
+          <ConnectionNotice />
+
           {stage === "video" ? (
-            <CallStage
-              pinnedKey={pinnedKey}
-              onTogglePin={setPinnedKey}
-              canModerate={canModerate}
-              actorOutranks={actorOutranks}
-              onModerate={moderate}
-            />
+            pip.pipWindow ? (
+              /*
+               * The live stage moves into the small window rather than being
+               * duplicated: two copies would mean two sets of video elements
+               * playing the same tracks.
+               */
+              <>
+                {createPortal(
+                  <div className="h-dvh bg-background p-2">
+                    <CallStage
+                      pinnedKey={pinnedKey}
+                      onTogglePin={setPinnedKey}
+                      canModerate={canModerate}
+                      actorOutranks={actorOutranks}
+                      onModerate={moderate}
+                    />
+                  </div>,
+                  pip.pipWindow.document.body,
+                )}
+                <div className="grid flex-1 place-items-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
+                  {t("pipClose")}
+                </div>
+              </>
+            ) : (
+              <CallStage
+                pinnedKey={pinnedKey}
+                onTogglePin={setPinnedKey}
+                canModerate={canModerate}
+                actorOutranks={actorOutranks}
+                onModerate={moderate}
+              />
+            )
           ) : (
             <>
               <div className="min-h-0 flex-1">
@@ -287,7 +339,7 @@ export function CallRoom({
         </main>
 
         {panel ? (
-          <div className="flex w-80 shrink-0 flex-col border-l border-border bg-card">
+          <div className="fixed inset-0 z-40 flex flex-col border-border bg-card md:relative md:inset-auto md:z-auto md:w-80 md:shrink-0 md:border-l">
             {panel === "participants" ? (
               <>
                 <div className="min-h-0 flex-1">
@@ -344,6 +396,12 @@ export function CallRoom({
           onToggleHand={() => void events.toggleHand()}
           onReact={(emoji) => void events.sendReaction(emoji)}
           unreadCount={unread}
+          blurEnabled={blurEnabled}
+          blurSupported={blurSupported}
+          onToggleBlur={onToggleBlur}
+          pipSupported={pip.supported && stage === "video"}
+          pipOpen={Boolean(pip.pipWindow)}
+          onTogglePip={() => void (pip.pipWindow ? pip.close() : pip.open())}
         />
         <p className="hidden text-center text-[0.6875rem] text-muted-foreground md:block">
           {t("shortcuts")} · {t("pushToTalkHint")}

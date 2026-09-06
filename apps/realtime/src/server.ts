@@ -19,6 +19,7 @@ import { sweepExpiredBreakouts } from "./breakout/service";
 import { connectDb, disconnectFromDatabase } from "./db";
 import { env } from "./env";
 import { registerLiveKitWebhook } from "./livekit/webhook";
+import { sweepFinishedMeetings } from "./meetings/sweep";
 import { flushAll } from "./yjs/registry";
 import { registerYjsRoute } from "./yjs/route";
 
@@ -41,14 +42,23 @@ await registerYjsRoute(app);
 registerBreakoutRoutes(app);
 
 /**
- * The breakout countdown.
+ * The two things that have to happen on a clock rather than on a request.
  *
- * Polled rather than scheduled per room: a timer held in memory is lost when
- * the service restarts, and people who were promised they would be brought
- * back in ten minutes should be, restart or not.
+ * Breakouts are recalled when their time is up, and meetings are closed once
+ * LiveKit no longer has a room for them. Both are polled rather than scheduled
+ * in memory: a timer held in this process is lost when it restarts, and people
+ * promised they would be brought back in ten minutes should be, restart or not.
  */
-const breakoutSweep = setInterval(() => {
+const callSweep = setInterval(() => {
   void sweepExpiredBreakouts().catch((error) => app.log.error({ error }, "breakout sweep failed"));
+
+  void sweepFinishedMeetings()
+    .then((closed) => {
+      if (closed > 0) {
+        app.log.info({ closed }, "closed meetings whose LiveKit room had gone");
+      }
+    })
+    .catch((error) => app.log.error({ error }, "meeting sweep failed"));
 }, 15_000);
 
 /**
@@ -91,7 +101,7 @@ async function start() {
 for (const signal of ["SIGINT", "SIGTERM"] as const) {
   process.on(signal, async () => {
     app.log.info(`${signal} received, shutting down`);
-    clearInterval(breakoutSweep);
+    clearInterval(callSweep);
     clearInterval(orphanSweep);
     await app.close();
     // Nobody should lose a whiteboard because the service restarted.

@@ -163,10 +163,21 @@ export function RoomExperience({
           // Publishes several qualities so each viewer gets what their
           // connection can carry rather than everyone getting the worst.
           dynacast: true,
-          videoCaptureDefaults: choices.cameraId ? { deviceId: choices.cameraId } : undefined,
-          audioCaptureDefaults: choices.microphoneId
-            ? { deviceId: choices.microphoneId }
-            : undefined,
+          videoCaptureDefaults: {
+            deviceId: choices.cameraId || undefined,
+            // 720p is the ceiling on purpose. Nobody in a small meeting looks
+            // better at 1080p, and the extra bitrate is felt by whoever has
+            // the worst connection in the room.
+            resolution: { width: 1280, height: 720 },
+          },
+          audioCaptureDefaults: {
+            deviceId: choices.microphoneId || undefined,
+            // The browser's own processing. Krisp is the alternative and it is
+            // billed per minute on LiveKit Cloud.
+            noiseSuppression: true,
+            echoCancellation: true,
+            autoGainControl: true,
+          },
         }}
         onDisconnected={() => setPhase({ kind: "left" })}
         className="contents"
@@ -180,6 +191,13 @@ export function RoomExperience({
           token={phase.token}
           realtimeUrl={realtimeUrl}
           displayName={knownName ?? displayName}
+          /*
+           * The live preference, not `phase.choices` — that is the snapshot
+           * taken when the call started and would never change again, so the
+           * toggle would appear to do nothing.
+           */
+          blurEnabled={preview.choices.backgroundBlur}
+          onToggleBlur={() => preview.update({ backgroundBlur: !preview.choices.backgroundBlur })}
           onBreakoutMove={handleBreakoutMove}
           onLeave={() => setPhase({ kind: "left" })}
         />

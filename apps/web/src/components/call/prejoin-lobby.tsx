@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Loader2, Mic, MicOff, Sparkles, Video, VideoOff } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
@@ -26,7 +26,7 @@ export function PrejoinLobby({
   const { choices, update, permission, audioLevel, videoRef } = preview;
 
   return (
-    <div className="grid w-full gap-8 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start">
+    <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <div className="space-y-4">
         <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-black">
           {/* Mirrored, because a preview of yourself that is not mirrored
@@ -128,6 +128,25 @@ export function PrejoinLobby({
             ) : null}
           </>
         )}
+
+        {/* The preview cannot show the blur — the processor works on a
+            published track, not the raw stream — but choosing it here is what
+            makes it on from the first frame anyone else sees. */}
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3">
+          <input
+            type="checkbox"
+            checked={choices.backgroundBlur}
+            onChange={(event) => update({ backgroundBlur: event.target.checked })}
+            className="mt-0.5"
+          />
+          <span className="min-w-0">
+            <span className="flex items-center gap-1.5 text-sm font-medium">
+              <Sparkles className="size-3.5 text-signal" aria-hidden />
+              {t("blurOn")}
+            </span>
+            <span className="mt-0.5 block text-xs text-muted-foreground">{t("blurLobbyHint")}</span>
+          </span>
+        </label>
 
         {credentials}
 

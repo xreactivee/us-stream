@@ -8,6 +8,15 @@ export interface MediaChoices {
   speakerId: string;
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
+  /**
+   * Blur the camera background once the call starts.
+   *
+   * Not shown in the lobby preview: the processor works on a published LiveKit
+   * track, not on the raw stream the preview uses. Choosing it here still
+   * matters — it means the blur is on from the first frame anyone else sees,
+   * which is the whole point of it.
+   */
+  backgroundBlur: boolean;
 }
 
 export type PermissionState = "pending" | "granted" | "denied";
@@ -53,6 +62,7 @@ export function useMediaPreview() {
     speakerId: "",
     cameraEnabled: true,
     microphoneEnabled: true,
+    backgroundBlur: false,
   });
 
   const videoRef = useRef<HTMLVideoElement | null>(null);

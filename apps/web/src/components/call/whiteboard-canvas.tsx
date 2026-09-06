@@ -3,6 +3,7 @@
 import type { BoardColor, BoardShape, BoardTool } from "@us-stream/shared";
 import { BOARD_TEXT_MAX_LENGTH } from "@us-stream/shared";
 import { type PointerEvent as ReactPointerEvent, useCallback, useRef, useState } from "react";
+import { pairsOf, ShapeNode } from "@/components/board-shapes";
 
 export interface ViewTransform {
   x: number;
@@ -310,75 +311,6 @@ export function WhiteboardCanvas({
       ) : null}
     </div>
   );
-}
-
-function ShapeNode({ shape }: { shape: BoardShape }) {
-  const [x0 = 0, y0 = 0, x1 = 0, y1 = 0] = shape.points;
-  const common = {
-    stroke: shape.color,
-    strokeWidth: shape.width,
-    strokeLinecap: "round" as const,
-    strokeLinejoin: "round" as const,
-    fill: "none",
-  };
-
-  switch (shape.kind) {
-    case "pen":
-      return (
-        <polyline
-          points={pairsOf(shape.points)
-            .map(([x, y]) => `${x},${y}`)
-            .join(" ")}
-          {...common}
-        />
-      );
-
-    case "line":
-      return <line x1={x0} y1={y0} x2={x1} y2={y1} {...common} />;
-
-    case "rect":
-      return (
-        <rect
-          x={Math.min(x0, x1)}
-          y={Math.min(y0, y1)}
-          width={Math.abs(x1 - x0)}
-          height={Math.abs(y1 - y0)}
-          rx={4}
-          {...common}
-        />
-      );
-
-    case "ellipse":
-      return (
-        <ellipse
-          cx={(x0 + x1) / 2}
-          cy={(y0 + y1) / 2}
-          rx={Math.abs(x1 - x0) / 2}
-          ry={Math.abs(y1 - y0) / 2}
-          {...common}
-        />
-      );
-
-    case "text":
-      return (
-        <text x={x0} y={y0} fill={shape.color} fontSize={16} stroke="none">
-          {shape.text}
-        </text>
-      );
-
-    default:
-      return null;
-  }
-}
-
-function pairsOf(points: number[]): [number, number][] {
-  const pairs: [number, number][] = [];
-
-  for (let index = 0; index + 1 < points.length; index += 2) {
-    pairs.push([points[index] as number, points[index + 1] as number]);
-  }
-
-  return pairs;
 }
 
 /** Cheap hit test: near any sampled point, or inside the bounding box. */
