@@ -113,4 +113,6 @@ if (failed) {
   process.exit(1);
 }
 
-console.log("\nBoth builds are queued. Watch them in each dashboard; a hook says only that\nthe build began, never that it succeeded.");
+console.log(
+  "\nBoth builds are queued. Watch them in each dashboard; a hook says only that\nthe build began, never that it succeeded.",
+);
