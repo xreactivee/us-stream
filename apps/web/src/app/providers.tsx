@@ -5,13 +5,7 @@ import type { ReactNode } from "react";
 
 export function Providers({ children }: { children: ReactNode }) {
   return (
-    <ThemeProvider
-      attribute="class"
-      // Calls happen in the dark; the light theme is the deliberate choice.
-      defaultTheme="dark"
-      enableSystem
-      disableTransitionOnChange
-    >
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem disableTransitionOnChange>
       {children}
     </ThemeProvider>
   );

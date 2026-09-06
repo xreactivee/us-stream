@@ -13,15 +13,9 @@ import {
   updateRoom,
 } from "@/lib/rooms";
 import { requireSession } from "@/lib/session";
+import type { ActionResult } from "@/types";
 
-/**
- * What every action in this file returns. Failures carry a code the client
- * translates, never a raw message — a server error string has no place in the
- * interface and can leak internals.
- */
-export type ActionResult<T extends object = object> =
-  | ({ ok: true } & T)
-  | { ok: false; error: string };
+export type { ActionResult };
 
 export async function createRoomAction(input: unknown): Promise<ActionResult<{ slug: string }>> {
   const session = await requireSession("/dashboard");
@@ -39,10 +33,6 @@ export async function createRoomAction(input: unknown): Promise<ActionResult<{ s
   return { ok: true, slug: room.slug };
 }
 
-/**
- * A one-off meeting: a disposable room with a generated name that expires on
- * its own a day later, so the dashboard does not fill up with them.
- */
 export async function createInstantRoomAction(
   name: string,
 ): Promise<ActionResult<{ slug: string }>> {
@@ -91,8 +81,6 @@ export async function deleteRoomAction(roomId: string): Promise<ActionResult> {
     return { ok: false, error: "not_found" };
   }
 
-  // Only the owner may delete. A cohost can run the meeting but not destroy
-  // the room and everything recorded against it.
   if (room.ownerId !== session.user.id) {
     return { ok: false, error: "forbidden" };
   }

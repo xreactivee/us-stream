@@ -14,24 +14,11 @@ import {
 } from "@us-stream/db";
 import { type BoardShape, type DocKind, isBoardShape } from "@us-stream/shared";
 import * as Y from "yjs";
+import type { MeetingDetail, MeetingSummary } from "@/types";
 import { connectDb } from "./db";
 
-export interface MeetingSummary {
-  id: string;
-  roomName: string;
-  roomSlug: string;
-  startedAt: number;
-  endedAt: number | null;
-  participantCount: number;
-}
+export type { MeetingDetail, MeetingSummary };
 
-/**
- * Past meetings across every room the person belongs to.
- *
- * Only closed meetings appear. A meeting still running belongs in the room, not
- * in a history, and showing it here would offer a transcript of a conversation
- * that is still happening.
- */
 export async function listMeetingsForUser(userId: string): Promise<MeetingSummary[]> {
   await connectDb();
 
@@ -73,28 +60,6 @@ export async function listMeetingsForUser(userId: string): Promise<MeetingSummar
   });
 }
 
-export interface MeetingDetail {
-  meeting: Meeting;
-  room: Room;
-  messages: {
-    id: string;
-    senderName: string;
-    body: string;
-    kind: "text" | "system";
-    createdAt: number;
-  }[];
-  board: BoardShape[];
-  notes: string;
-}
-
-/**
- * Everything shown on one meeting's page.
- *
- * The whiteboard and the notes belong to the *room*, not to this meeting — they
- * carry on across sessions by design — so what comes back is their current
- * state rather than a snapshot of how they looked at the time. The page says so
- * rather than implying otherwise.
- */
 export async function getMeetingDetail(meetingId: string): Promise<MeetingDetail | null> {
   if (!isValidObjectId(meetingId)) {
     return null;
@@ -162,7 +127,6 @@ async function readBoard(roomId: Types.ObjectId): Promise<BoardShape[]> {
   const shapes: BoardShape[] = [];
 
   for (const value of doc.getMap("whiteboard.shapes").values()) {
-    // The same guard the live board uses: a shared map can hold anything.
     if (isBoardShape(value)) {
       shapes.push(value);
     }
@@ -180,8 +144,6 @@ async function readNotes(roomId: Types.ObjectId): Promise<string> {
     return "";
   }
 
-  // Tiptap stores a ProseMirror fragment; its plain text is enough for a
-  // read-only page and avoids running the whole editor on the server.
   const text = doc.getXmlFragment("notes").toString();
   doc.destroy();
 

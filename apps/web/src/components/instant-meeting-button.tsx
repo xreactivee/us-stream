@@ -7,7 +7,6 @@ import { useState } from "react";
 import { createInstantRoomAction } from "@/app/actions/rooms";
 import { Button } from "@/components/ui/button";
 
-/** Opens a disposable room and goes straight into it. */
 export function InstantMeetingButton() {
   const t = useTranslations("dashboard");
   const router = useRouter();

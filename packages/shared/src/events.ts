@@ -1,32 +1,16 @@
-/**
- * The in-call wire protocol.
- *
- * Everything that is not audio or video travels over LiveKit data channels:
- * chat, reactions, raised hands, host commands and poll notifications. Both ends validate against these schemas, so the protocol has
- * exactly one definition and a malformed payload can never reach the UI.
- */
-
 import { z } from "zod";
 import { CHAT_MESSAGE_MAX_LENGTH, POLL_QUESTION_MAX_LENGTH, REACTION_EMOJIS } from "./constants";
+import type { DataChannelEvent, DataTopic } from "./types";
 
-/**
- * LiveKit topics let a receiver filter without parsing. One topic per family of
- * events, matching the prefix of the event `type`.
- */
 export const DATA_TOPICS = ["chat", "presence", "host", "poll"] as const;
-export type DataTopic = (typeof DATA_TOPICS)[number];
 
 const identity = z.string().min(1).max(128);
 
-// -------------------------------------------------------------------- chat --
-
 export const chatMessageEvent = z.object({
   type: z.literal("chat.message"),
-  /** Client-generated so the sender can render optimistically and de-duplicate. */
   id: z.uuid(),
   body: z.string().min(1).max(CHAT_MESSAGE_MAX_LENGTH),
   replyToId: z.uuid().nullish(),
-  /** Private messages are delivered to a single participant. */
   toIdentity: identity.nullish(),
   sentAt: z.number().int().positive(),
 });
@@ -35,8 +19,6 @@ export const chatTypingEvent = z.object({
   type: z.literal("chat.typing"),
   isTyping: z.boolean(),
 });
-
-// ---------------------------------------------------------------- presence --
 
 export const reactionEvent = z.object({
   type: z.literal("presence.reaction"),
@@ -47,11 +29,8 @@ export const reactionEvent = z.object({
 export const handEvent = z.object({
   type: z.literal("presence.hand"),
   raised: z.boolean(),
-  /** Set when raising, so every client orders the speaking queue identically. */
   raisedAt: z.number().int().positive().nullish(),
 });
-
-// -------------------------------------------------------------------- host --
 
 export const hostMuteEvent = z.object({
   type: z.literal("host.mute"),
@@ -67,7 +46,6 @@ export const hostRemoveEvent = z.object({
 
 export const hostSpotlightEvent = z.object({
   type: z.literal("host.spotlight"),
-  /** `null` clears the spotlight and returns everyone to their own layout. */
   targetIdentity: identity.nullable(),
 });
 
@@ -77,13 +55,10 @@ export const hostRoleChangedEvent = z.object({
   role: z.enum(["owner", "cohost", "member", "guest"]),
 });
 
-// ------------------------------------------------------------------- polls --
-
 export const pollChangedEvent = z.object({
   type: z.literal("poll.changed"),
   pollId: z.uuid(),
   status: z.enum(["opened", "updated", "closed"]),
-  /** Included on `opened` so clients can render without a round trip. */
   question: z.string().max(POLL_QUESTION_MAX_LENGTH).nullish(),
 });
 
@@ -92,8 +67,6 @@ export const questionChangedEvent = z.object({
   questionId: z.uuid(),
   status: z.enum(["asked", "upvoted", "answered"]),
 });
-
-// ------------------------------------------------------------------- union --
 
 export const dataChannelEvent = z.discriminatedUnion("type", [
   chatMessageEvent,
@@ -108,12 +81,6 @@ export const dataChannelEvent = z.discriminatedUnion("type", [
   questionChangedEvent,
 ]);
 
-export type DataChannelEvent = z.infer<typeof dataChannelEvent>;
-export type ChatMessageEvent = z.infer<typeof chatMessageEvent>;
-export type ReactionEvent = z.infer<typeof reactionEvent>;
-export type HandEvent = z.infer<typeof handEvent>;
-
-/** The topic an event must be published on, derived from its `type` prefix. */
 export function topicFor(event: DataChannelEvent): DataTopic {
   return event.type.split(".", 1)[0] as DataTopic;
 }
@@ -121,21 +88,10 @@ export function topicFor(event: DataChannelEvent): DataTopic {
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();
 
-/**
- * The copy is deliberate. `TextEncoder` returns a view over an
- * `ArrayBufferLike`, which could be a `SharedArrayBuffer`, and LiveKit's
- * `publishData` accepts only a plain `ArrayBuffer` view. Copying a chat-sized
- * payload costs nothing and keeps the type honest instead of asserting it away.
- */
 export function encodeEvent(event: DataChannelEvent): Uint8Array<ArrayBuffer> {
   return new Uint8Array(encoder.encode(JSON.stringify(event)));
 }
 
-/**
- * Decodes a payload received from another participant. Returns `null` rather
- * than throwing: a peer can send anything, and one bad frame must not take the
- * call down.
- */
 export function decodeEvent(payload: Uint8Array): DataChannelEvent | null {
   try {
     const parsed = dataChannelEvent.safeParse(JSON.parse(decoder.decode(payload)));

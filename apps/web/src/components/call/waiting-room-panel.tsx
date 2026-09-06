@@ -8,14 +8,6 @@ import { Button } from "@/components/ui/button";
 
 const POLL_INTERVAL_MS = 4000;
 
-/**
- * The people waiting to be let in.
- *
- * Polled rather than pushed: whoever is knocking is not in the room yet, so
- * they have no data channel to announce themselves on, and a websocket for a
- * list that changes a handful of times per meeting is not worth its
- * complexity.
- */
 export function useAdmissions({ slug, enabled }: { slug: string; enabled: boolean }) {
   const [pending, setPending] = useState<PendingAdmission[]>([]);
 

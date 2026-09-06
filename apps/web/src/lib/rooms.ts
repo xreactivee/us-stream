@@ -12,17 +12,10 @@ import {
 import { connectDb } from "./db";
 import { hashRoomPassword } from "./password";
 
-/** Disposable rooms disappear a day after they are made. */
 const DISPOSABLE_ROOM_LIFETIME_MS = 24 * 60 * 60 * 1000;
 
 export type RoomDocument = Room;
 
-/**
- * The role a signed-in user holds in a room. Everyone else — including a
- * signed-in user who has never been added — is a guest, which is the correct
- * default: a room is joinable by link, so being unknown is normal rather than
- * an error.
- */
 export function roleForUser(room: Pick<Room, "ownerId" | "members">, userId?: string | null): Role {
   if (!userId) {
     return "guest";
@@ -44,8 +37,6 @@ export async function createRoomForUser(
 
   const passwordHash = input.password ? await hashRoomPassword(input.password) : null;
 
-  // Slugs are two words and a number, so collisions are rare but possible.
-  // Retrying is cheaper than coordinating a global counter.
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const slug = generateRoomSlug(locale);
 
@@ -117,7 +108,6 @@ export async function updateRoom(
     }
   }
 
-  // An explicit null clears the password; leaving it out keeps the current one.
   if (input.password !== undefined) {
     update.passwordHash = input.password ? await hashRoomPassword(input.password) : null;
   }
@@ -125,7 +115,6 @@ export async function updateRoom(
   return RoomModel.findByIdAndUpdate(roomId, update, { new: true }).lean<Room>();
 }
 
-/** Removes the room together with its meetings, chat, polls and documents. */
 export async function deleteRoom(roomId: Types.ObjectId): Promise<void> {
   await connectDb();
   await deleteRoomAndChildren(roomId);

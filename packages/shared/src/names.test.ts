@@ -17,7 +17,7 @@ describe("sameDisplayName", () => {
 
   it("keeps different names apart", () => {
     expect(sameDisplayName("Ada", "Adam")).toBe(false);
-    // Dotted and dotless I are different letters, not different cases of one.
+
     expect(sameDisplayName("ılke", "ilke")).toBe(false);
   });
 });

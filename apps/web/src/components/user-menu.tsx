@@ -2,6 +2,7 @@
 
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { LayoutGrid, LogOut, Settings } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
@@ -33,9 +34,14 @@ export function UserMenu({
         className="grid size-9 place-items-center overflow-hidden rounded-full border border-border bg-secondary text-xs font-semibold outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         {image ? (
-          // The provider serves this; Next's optimiser would need each host allow-listed.
-          // biome-ignore lint/performance/noImgElement: avatar URLs come from arbitrary OAuth providers
-          <img src={image} alt="" className="size-full object-cover" />
+          <Image
+            src={image}
+            alt=""
+            width={36}
+            height={36}
+            unoptimized
+            className="size-full object-cover"
+          />
         ) : (
           initials || "?"
         )}

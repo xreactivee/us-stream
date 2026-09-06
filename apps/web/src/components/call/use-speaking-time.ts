@@ -3,22 +3,8 @@
 import { useIsSpeaking, useLocalParticipant } from "@livekit/components-react";
 import { useEffect, useRef } from "react";
 
-/** Long enough that the traffic is trivial, short enough that a crash loses little. */
 const FLUSH_INTERVAL_MS = 15_000;
 
-/**
- * Reports how long this person has been speaking.
- *
- * Each client reports only its own time. LiveKit has no server-side event for
- * speech, so somebody has to measure it — and if every client measured everyone
- * we would get as many conflicting numbers for one participant as there are
- * people in the room. Reporting only yourself gives each participant exactly
- * one writer.
- *
- * This is a statistic, not a permission. A modified client could inflate its
- * own figure; it would win nothing but a longer bar on a chart, which is not
- * worth defending against.
- */
 export function useSpeakingTime({ slug }: { slug: string }) {
   const { localParticipant } = useLocalParticipant();
   const speaking = useIsSpeaking(localParticipant);
@@ -26,7 +12,6 @@ export function useSpeakingTime({ slug }: { slug: string }) {
   const pendingMs = useRef(0);
   const startedAt = useRef<number | null>(null);
 
-  // Accumulate while speaking; bank the stretch when it ends.
   useEffect(() => {
     if (speaking) {
       startedAt.current = Date.now();

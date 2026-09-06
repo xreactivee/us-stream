@@ -21,7 +21,7 @@ describe("hasAuthority", () => {
 describe("outranks", () => {
   it("requires strictly more authority", () => {
     expect(outranks("owner", "cohost")).toBe(true);
-    // Two cohosts cannot remove each other.
+
     expect(outranks("cohost", "cohost")).toBe(false);
   });
 });
@@ -33,8 +33,6 @@ describe("permissionsFor", () => {
     expect(permissionsFor("member").canManageParticipants).toBe(false);
     expect(permissionsFor("guest").canManageParticipants).toBe(false);
 
-    // Renaming a room, setting its password and locking it belong to the
-    // person who owns it, not to a cohost running one meeting.
     expect(permissionsFor("owner").canManageRoom).toBe(true);
     expect(permissionsFor("cohost").canManageRoom).toBe(false);
   });

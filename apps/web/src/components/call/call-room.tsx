@@ -175,7 +175,6 @@ export function CallRoom({
 
   return (
     <div className="flex h-dvh flex-col overflow-hidden bg-background">
-      {/* Plays every remote audio track. Without it a call is silent. */}
       <RoomAudioRenderer />
 
       <LiveAnnouncer
@@ -203,8 +202,6 @@ export function CallRoom({
           </span>
         </div>
 
-        {/* Native radios so the browser supplies arrow-key navigation and the
-            group semantics a screen reader expects. */}
         <fieldset className="flex shrink-0 items-center gap-0.5 rounded-lg border border-border bg-card p-0.5">
           <legend className="sr-only">{t("stageLabel")}</legend>
           {STAGE_MODES.map(({ mode, labelKey }) => (
@@ -305,8 +302,6 @@ export function CallRoom({
                 />
               </div>
 
-              {/* Faces stay along the bottom rather than disappearing: people
-                  are still talking while they draw. */}
               <div className="h-28 shrink-0">
                 <CallStage
                   layout="strip"
@@ -387,8 +382,6 @@ export function CallRoom({
         </p>
       </footer>
 
-      {/* Browsers block autoplaying audio until someone interacts; this is the
-          button that unblocks it, and it hides itself when it is not needed. */}
       <StartAudio label="" className="sr-only" />
     </div>
   );

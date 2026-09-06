@@ -66,8 +66,6 @@ export async function POST(
 
   const chosen = poll.allowMultiple ? valid : valid.slice(0, 1);
 
-  // Replacing this voter's entries rather than appending means voting twice
-  // changes an answer instead of stuffing the ballot.
   poll.votes = [
     ...poll.votes.filter((vote) => vote.voterIdentity !== caller.identity),
     ...chosen.map((optionIndex) => ({
@@ -79,7 +77,10 @@ export async function POST(
 
   await poll.save();
 
-  return NextResponse.json({ poll: serialisePoll(poll.toObject(), caller.identity) });
+  return NextResponse.json(
+    { poll: serialisePoll(poll.toObject(), caller.identity) },
+    { status: 201 },
+  );
 }
 
 export async function DELETE(
@@ -106,5 +107,5 @@ export async function DELETE(
 
   poll.closedAt = new Date();
 
-  return NextResponse.json({ poll: serialisePoll(poll.toObject(), caller.identity) });
+  return new NextResponse(null, { status: 204 });
 }

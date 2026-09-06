@@ -9,18 +9,10 @@ export interface YjsConnection {
   doc: Y.Doc;
   provider: WebsocketProvider;
   connected: boolean;
-  /** True until the first sync completes, so nothing renders a blank board. */
+
   loading: boolean;
 }
 
-/**
- * Connects one collaborative document to the realtime service.
- *
- * The LiveKit access token is the credential. It already proves its holder was
- * admitted to this room, and the server derives the room from it, so a
- * whiteboard cannot be opened by anyone who could not join the call and there
- * is no second credential to keep in step with the first.
- */
 export function useYjsDoc({
   kind,
   token,
@@ -37,16 +29,10 @@ export function useYjsDoc({
   useEffect(() => {
     const doc = new Y.Doc();
 
-    // y-websocket appends the room name to the URL, so "yjs" produces
-    // `.../yjs?token=…&kind=…`, which is the route the service exposes. The
-    // room itself is not in the path: it comes from the token, where a client
-    // cannot change it.
     const provider = new WebsocketProvider(serverUrl, "yjs", doc, {
       params: { token, kind },
     });
 
-    // Presence: a colour and a name for this person's cursor. Derived from the
-    // display name so the same person keeps the same colour between sessions.
     provider.awareness.setLocalStateField("user", {
       name: displayName,
       color: colorFor(displayName),
@@ -76,14 +62,6 @@ export function useYjsDoc({
   return connection;
 }
 
-/**
- * Stable pastel from a name, so cursors are distinguishable but never harsh.
- *
- * Returned as `#rrggbb` because Tiptap's caret extension validates the colour
- * against exactly that pattern and silently substitutes `transparent` for
- * anything else — an `hsl()` string included, which is why the notes carets
- * had no colour at all.
- */
 export function colorFor(name: string): string {
   let hash = 0;
 

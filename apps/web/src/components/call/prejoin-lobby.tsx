@@ -18,7 +18,7 @@ export function PrejoinLobby({
   preview: ReturnType<typeof useMediaPreview>;
   joining: boolean;
   onJoin: (choices: MediaChoices) => void;
-  /** Name and password fields, when the room asks for them. */
+
   credentials?: ReactNode;
   error?: string | null;
 }) {
@@ -29,8 +29,6 @@ export function PrejoinLobby({
     <div className="grid w-full gap-6 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)] lg:items-start lg:gap-8">
       <div className="space-y-4">
         <div className="relative aspect-video overflow-hidden rounded-2xl border border-border bg-black">
-          {/* Mirrored, because a preview of yourself that is not mirrored
-              feels wrong to everyone who has ever used a mirror. */}
           <video
             ref={videoRef}
             autoPlay
@@ -71,8 +69,6 @@ export function PrejoinLobby({
           </div>
         </div>
 
-        {/* Level meter: proof the right microphone is selected, before
-            anyone has to ask "can you hear me". */}
         <div className="flex items-center gap-3">
           <Mic
             className={cn(
@@ -129,9 +125,6 @@ export function PrejoinLobby({
           </>
         )}
 
-        {/* The preview cannot show the blur — the processor works on a
-            published track, not the raw stream — but choosing it here is what
-            makes it on from the first frame anyone else sees. */}
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border p-3">
           <input
             type="checkbox"

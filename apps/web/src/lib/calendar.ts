@@ -1,22 +1,8 @@
 import { createEvent } from "ics";
+import type { CalendarInvite } from "@/types";
 
-export interface CalendarInvite {
-  id: string;
-  title: string;
-  startsAt: Date;
-  durationMinutes: number;
-  roomName: string;
-  joinUrl: string;
-}
+export type { CalendarInvite };
 
-/**
- * Builds the `.ics` file a calendar application will accept.
- *
- * The times are given as UTC components rather than local ones. `ics` reads a
- * bare array as wall-clock time in whatever zone the *server* happens to be in,
- * which would silently shift every invite for anyone whose deployment moved
- * region.
- */
 export function buildInvite(invite: CalendarInvite): string | null {
   const start = invite.startsAt;
 

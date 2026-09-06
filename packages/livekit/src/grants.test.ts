@@ -9,8 +9,6 @@ describe("grantsFor", () => {
     expect(grantsFor("owner", ROOM).roomAdmin).toBe(true);
     expect(grantsFor("cohost", ROOM).roomAdmin).toBe(true);
 
-    // The whole point of the role split: a member or a guest must never be
-    // able to mute or remove anyone else.
     expect(grantsFor("member", ROOM).roomAdmin).toBe(false);
     expect(grantsFor("guest", ROOM).roomAdmin).toBe(false);
   });
@@ -27,8 +25,6 @@ describe("grantsFor", () => {
   });
 
   it("never lets a participant rewrite their own metadata", () => {
-    // Metadata carries the role badge other people see, so it stays
-    // server-set for everyone, hosts included.
     for (const role of ROLES) {
       expect(grantsFor(role, ROOM).canUpdateOwnMetadata, role).toBe(false);
     }
@@ -42,7 +38,6 @@ describe("grantsFor", () => {
 
 describe("livekitRoomName", () => {
   it("derives the room name from the id, not the public slug", () => {
-    // The slug can be changed and is guessable; the id cannot.
     expect(livekitRoomName("64f0c0ffee")).toBe("room_64f0c0ffee");
   });
 });

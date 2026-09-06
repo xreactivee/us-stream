@@ -4,19 +4,9 @@ import { WebhookReceiver } from "livekit-server-sdk";
 import { env } from "../env";
 import { roomIdFromName } from "./room-name";
 
-/**
- * LiveKit's record of what happened, turned into ours.
- *
- * The SFU is the only thing that actually knows when a room went live, who
- * arrived and when they left — the browser cannot be trusted to report it, and
- * a participant whose laptop dies never reports anything at all. These
- * webhooks are therefore the source of truth for meeting history.
- */
 const receiver = new WebhookReceiver(env.LIVEKIT_API_KEY, env.LIVEKIT_API_SECRET);
 
 export async function registerLiveKitWebhook(app: FastifyInstance) {
-  // The signature covers the raw bytes, so this route must not have its body
-  // parsed into an object before verification.
   app.addContentTypeParser(
     "application/webhook+json",
     { parseAs: "string" },
@@ -42,8 +32,6 @@ export async function registerLiveKitWebhook(app: FastifyInstance) {
     const roomId = roomIdFromName(event.room?.name);
 
     if (!roomId) {
-      // Breakout sub-rooms and anything else we did not name are ignored
-      // rather than treated as an error.
       return reply.send({ ok: true, ignored: true });
     }
 
@@ -66,8 +54,6 @@ export async function registerLiveKitWebhook(app: FastifyInstance) {
           const metadata = safeMetadata(participant.metadata);
 
           await MeetingModel.updateOne(
-            // `trusted` because `sanitizeFilter` is on globally and cannot
-            // tell our own `$ne` from one arriving in a request body.
             {
               livekitRoomSid: sid,
               "participants.identity": trusted({ $ne: participant.identity }),
@@ -116,7 +102,6 @@ export async function registerLiveKitWebhook(app: FastifyInstance) {
   });
 }
 
-/** Participant metadata is set by us, but a malformed value must not throw. */
 function safeMetadata(raw: string | undefined): { role?: string; userId?: string } {
   if (!raw) {
     return {};

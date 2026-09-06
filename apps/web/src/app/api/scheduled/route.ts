@@ -4,7 +4,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-/** Books a meeting in a room the caller owns or belongs to. */
 export async function POST(request: NextRequest) {
   const session = await getSession();
 
@@ -20,8 +19,6 @@ export async function POST(request: NextRequest) {
 
   await connectDb();
 
-  // The membership check is the query: a room the caller has nothing to do
-  // with simply does not come back.
   const room = await RoomModel.findOne({
     _id: new Types.ObjectId(body.data.roomId),
     $or: [{ ownerId: session.user.id }, { "members.userId": session.user.id }],
@@ -41,5 +38,5 @@ export async function POST(request: NextRequest) {
     durationMinutes: body.data.durationMinutes,
   });
 
-  return NextResponse.json({ id: String(created._id) });
+  return NextResponse.json({ id: String(created._id) }, { status: 201 });
 }

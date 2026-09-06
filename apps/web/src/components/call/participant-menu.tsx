@@ -4,7 +4,6 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { MicOff, MoreVertical, UserMinus } from "lucide-react";
 import { useTranslations } from "next-intl";
 
-/** Host actions on one participant. Only rendered when the actor outranks them. */
 export function ParticipantMenu({
   name,
   onMute,

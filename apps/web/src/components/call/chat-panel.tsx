@@ -8,7 +8,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import type { ChatMessage } from "./use-room-events";
+import type { ChatMessage } from "@/types";
 
 export function ChatPanel({
   messages,
@@ -30,8 +30,6 @@ export function ChatPanel({
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const lastCount = useRef(0);
 
-  // Follow the conversation, but only when it actually grows — scrolling on
-  // every re-render would yank the list away from someone reading it.
   useEffect(() => {
     if (messages.length > lastCount.current) {
       bottomRef.current?.scrollIntoView({ block: "end" });
@@ -84,7 +82,7 @@ export function ChatPanel({
                   ) : null}
                 </div>
 
-                <p className="text-sm break-words whitespace-pre-wrap text-foreground/90">
+                <p className="text-sm wrap-break-word whitespace-pre-wrap text-foreground/90">
                   {message.body}
                 </p>
 

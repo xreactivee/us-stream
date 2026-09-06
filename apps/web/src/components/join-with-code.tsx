@@ -8,10 +8,6 @@ import { type FormEvent, useId, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 
-/**
- * Accepts either a bare code or a pasted invite URL, because people paste the
- * whole link far more often than they retype the code.
- */
 function extractSlug(value: string): string | null {
   const trimmed = value.trim().toLowerCase();
   const fromUrl = trimmed.match(/\/r\/([a-z0-9-]+)/);

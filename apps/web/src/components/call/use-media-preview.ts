@@ -8,14 +8,7 @@ export interface MediaChoices {
   speakerId: string;
   cameraEnabled: boolean;
   microphoneEnabled: boolean;
-  /**
-   * Blur the camera background once the call starts.
-   *
-   * Not shown in the lobby preview: the processor works on a published LiveKit
-   * track, not on the raw stream the preview uses. Choosing it here still
-   * matters — it means the blur is on from the first frame anyone else sees,
-   * which is the whole point of it.
-   */
+
   backgroundBlur: boolean;
 }
 
@@ -34,23 +27,9 @@ function readStoredChoices(): Partial<MediaChoices> {
 function storeChoices(choices: MediaChoices) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(choices));
-  } catch {
-    // A browser with site data blocked still works, it just forgets.
-  }
+  } catch {}
 }
 
-/**
- * The lobby's camera and microphone preview.
- *
- * Deliberately built on a plain `MediaStream` rather than LiveKit tracks. The
- * lobby only needs a picture and a level meter; creating real publishable
- * tracks here would mean handing them to the Room later, and a
- * half-transferred track is a much worse failure than opening the camera
- * twice.
- *
- * Device labels are empty until permission is granted, which is why
- * enumeration happens after `getUserMedia` rather than before.
- */
 export function useMediaPreview() {
   const [permission, setPermission] = useState<PermissionState>("pending");
   const [devices, setDevices] = useState<MediaDeviceInfo[]>([]);
@@ -68,8 +47,6 @@ export function useMediaPreview() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  // Restore previous choices before the first request, so the browser is asked
-  // for the camera this person used last time.
   useEffect(() => {
     setChoices((current) => ({ ...current, ...readStoredChoices() }));
   }, []);
@@ -118,7 +95,6 @@ export function useMediaPreview() {
           videoRef.current.srcObject = opened;
         }
 
-        // Labels only become readable once permission exists.
         setDevices(await navigator.mediaDevices.enumerateDevices());
       } catch {
         if (!cancelled) {
@@ -140,14 +116,8 @@ export function useMediaPreview() {
     release,
   ]);
 
-  // Stop the camera when the component goes away, even if `release` was never
-  // called explicitly.
   useEffect(() => release, [release]);
 
-  /**
-   * Level meter. Reading the analyser on every animation frame is cheap, and
-   * gives the bar something to move to while someone says "can you hear me".
-   */
   useEffect(() => {
     const audioTrack = stream?.getAudioTracks()[0];
 
@@ -201,7 +171,7 @@ export function useMediaPreview() {
     cameras: devices.filter((device) => device.kind === "videoinput"),
     microphones: devices.filter((device) => device.kind === "audioinput"),
     speakers: devices.filter((device) => device.kind === "audiooutput"),
-    /** Called before connecting, so the Room does not fight over the camera. */
+
     release,
   };
 }

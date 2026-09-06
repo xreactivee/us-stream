@@ -1,13 +1,3 @@
-/**
- * MongoDB needs no migrations, but indexes declared in a schema only reach the
- * server when something asks for them. Run this after changing an index:
- *
- *   pnpm db:indexes
- *
- * `syncIndexes` also drops indexes that are no longer declared, so the database
- * ends up matching the schema exactly rather than accumulating old ones.
- */
-
 import { config as loadEnv } from "dotenv";
 import { connectToDatabase, disconnectFromDatabase } from "../connect";
 import {

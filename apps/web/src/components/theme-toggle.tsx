@@ -12,19 +12,12 @@ const OPTIONS = [
   { value: "system", Icon: Monitor, labelKey: "themeSystem" },
 ] as const;
 
-/**
- * Native radios rather than buttons with `role="radio"`: browsers give a real
- * radio group arrow-key navigation and screen reader semantics for free. The
- * inputs are visually hidden and the labels carry the styling.
- */
 export function ThemeToggle() {
   const t = useTranslations("settings");
   const { theme, setTheme } = useTheme();
   const groupName = useId();
   const [mounted, setMounted] = useState(false);
 
-  // The server cannot know which theme the browser resolved, so the checked
-  // state is only rendered after mounting; otherwise it flashes the wrong one.
   useEffect(() => setMounted(true), []);
 
   return (

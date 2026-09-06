@@ -1,39 +1,6 @@
-/**
- * Polls and Q&A — the parts of a meeting where participants answer back.
- *
- * Votes and upvotes are embedded arrays rather than their own collections. A
- * poll is always read with its results, and one vote per participant per option
- * keeps the array bounded by the room's capacity.
- */
-
-import { Schema, type Types } from "mongoose";
+import { Schema } from "mongoose";
+import type { Poll, PollOption, PollVote, Question } from "../types";
 import { defineModel } from "./define";
-
-export interface PollOption {
-  /** Stable index within the poll; votes reference it. */
-  index: number;
-  label: string;
-}
-
-export interface PollVote {
-  voterIdentity: string;
-  optionIndex: number;
-  createdAt: Date;
-}
-
-export interface Poll {
-  _id: Types.ObjectId;
-  meetingId: Types.ObjectId;
-  createdByIdentity: string;
-  question: string;
-  options: PollOption[];
-  votes: PollVote[];
-  allowMultiple: boolean;
-  isAnonymous: boolean;
-  closedAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const pollOptionSchema = new Schema<PollOption>(
   {
@@ -67,19 +34,6 @@ const pollSchema = new Schema<Poll>(
 );
 
 export const PollModel = defineModel("Poll", pollSchema);
-
-export interface Question {
-  _id: Types.ObjectId;
-  meetingId: Types.ObjectId;
-  askedByIdentity: string;
-  askedByName: string;
-  body: string;
-  /** Identities rather than a counter, so nobody can upvote twice. */
-  upvoters: string[];
-  answeredAt: Date | null;
-  createdAt: Date;
-  updatedAt: Date;
-}
 
 const questionSchema = new Schema<Question>(
   {

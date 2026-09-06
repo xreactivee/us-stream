@@ -31,16 +31,8 @@ type Phase =
     }
   | { kind: "left" };
 
-/** How often someone held in the waiting room asks whether they are in yet. */
 const ADMISSION_POLL_MS = 3000;
 
-/**
- * Everything between opening a room link and being in the call.
- *
- * The lobby, the credentials the room happens to require and the call itself
- * all live under one component because they share the device choices: what
- * someone picks in the preview is exactly what the Room connects with.
- */
 export function RoomExperience({
   slug,
   roomTitle,
@@ -54,7 +46,7 @@ export function RoomExperience({
   requiresPassword: boolean;
   knownName: string | null;
   initialRole: Role;
-  /** The realtime service, which hosts the whiteboard and the shared notes. */
+
   realtimeUrl: string;
 }) {
   const t = useTranslations("room");
@@ -68,16 +60,11 @@ export function RoomExperience({
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
 
-  // A host is never asked for their own room's password.
   const askForPassword = requiresPassword && initialRole === "guest";
   const askForName = !knownName;
 
   const join = useCallback(
     async (choices: MediaChoices) => {
-      /*
-       * Answered here, before the request, so the message lands the instant
-       * the button is pressed rather than after a round trip.
-       */
       if (askForName && displayName.trim().length < DISPLAY_NAME_MIN_LENGTH) {
         setErrorKey("name_required");
         return;

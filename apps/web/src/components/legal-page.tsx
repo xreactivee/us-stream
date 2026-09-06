@@ -1,10 +1,5 @@
 import type { ReactNode } from "react";
 
-/**
- * Shared shell for the privacy policy and the terms. Both are plain prose
- * documents; they exist as real pages because Google requires working policy
- * URLs before an OAuth consent screen can be published.
- */
 export function LegalPage({
   title,
   updatedLabel,

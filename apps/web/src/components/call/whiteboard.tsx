@@ -179,7 +179,7 @@ function ToolButton({
   onClick: () => void;
   Icon: typeof Pencil;
   destructive?: boolean;
-  /** Used by undo and redo, so an empty history looks empty. */
+
   disabled?: boolean;
 }) {
   return (

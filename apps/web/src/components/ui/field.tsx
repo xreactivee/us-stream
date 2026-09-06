@@ -30,7 +30,6 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
   );
 }
 
-/** Label, control and message as one unit, so spacing never drifts between forms. */
 export function Field({
   label,
   htmlFor,

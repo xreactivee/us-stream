@@ -10,26 +10,16 @@ import { authClient } from "@/lib/auth-client";
 
 export interface ConnectionView {
   provider: "google";
-  /**
-   * Better Auth's own row id for the link — not Google's user id. Unlinking
-   * is addressed by this one.
-   */
+
   linkId: string;
 }
 
-/**
- * Which sign-in methods are attached to this account.
- *
- * Connecting is a full OAuth round trip, so the button hands the page over to
- * Google and Better Auth brings it back here — there is no in-place success
- * state to render, only a spinner that lasts until the browser navigates.
- */
 export function ConnectionsPanel({
   connections,
   canUnlink,
 }: {
   connections: ConnectionView[];
-  /** False when this is the only way left to sign in. */
+
   canUnlink: boolean;
 }) {
   const t = useTranslations("connections");
@@ -48,7 +38,6 @@ export function ConnectionsPanel({
       callbackURL: "/dashboard",
     });
 
-    // Success navigates away, so reaching this line at all means it did not.
     if (result.error) {
       setFailed(true);
       setPending(false);

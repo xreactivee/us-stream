@@ -13,13 +13,6 @@ export interface RemoteCursor {
   y: number;
 }
 
-/**
- * The whiteboard's state, backed by one `Y.Map` of shapes.
- *
- * Shapes are keyed by id so two people drawing at the same moment write to
- * different keys and never conflict, and erasing is a delete rather than a
- * splice that would renumber everything after it.
- */
 export function useWhiteboard(connection: YjsConnection) {
   const shapesMap = useMemo(
     () => connection.doc.getMap<BoardShape>("whiteboard.shapes"),
@@ -29,17 +22,6 @@ export function useWhiteboard(connection: YjsConnection) {
   const [shapes, setShapes] = useState<BoardShape[]>([]);
   const [cursors, setCursors] = useState<RemoteCursor[]>([]);
 
-  /**
-   * Undo is scoped to this client's own edits. A shared undo that could
-   * reverse someone else's drawing is the fastest way to make a whiteboard
-   * feel hostile.
-   *
-   * Built inside the effect that owns it rather than in a memo. A memo is not
-   * re-evaluated when React mounts, unmounts and remounts a component — which
-   * it does to every component in development — so the cleanup destroyed the
-   * manager and the remount handed the buttons the same dead object. Both
-   * buttons then did nothing at all, for the life of the page.
-   */
   const [undoManager, setUndoManager] = useState<Y.UndoManager | null>(null);
   const [history, setHistory] = useState({ canUndo: false, canRedo: false });
 
@@ -74,8 +56,6 @@ export function useWhiteboard(connection: YjsConnection) {
       const next: BoardShape[] = [];
 
       for (const value of shapesMap.values()) {
-        // A peer can write anything into a shared map; a malformed entry is
-        // skipped rather than allowed to break the render.
         if (isBoardShape(value)) {
           next.push(value);
         }
@@ -176,5 +156,4 @@ export function useWhiteboard(connection: YjsConnection) {
   };
 }
 
-/** Marks a transaction as this client's, so undo only reverses our own work. */
 const LOCAL_ORIGIN = "local";

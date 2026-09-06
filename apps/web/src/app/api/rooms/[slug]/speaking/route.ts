@@ -6,7 +6,6 @@ import { connectDb } from "@/lib/db";
 import { getActiveMeeting } from "@/lib/meetings";
 import { getRoomBySlug } from "@/lib/rooms";
 
-/** One flush covers at most a few minutes; anything larger is not a real report. */
 const bodySchema = z.object({
   speakingMs: z
     .number()
@@ -15,13 +14,6 @@ const bodySchema = z.object({
     .max(10 * 60 * 1000),
 });
 
-/**
- * Records how long the caller has been speaking.
- *
- * The identity comes from the session or the signed guest cookie, never from
- * the body, so a client can only ever add to its own total. That it can inflate
- * its own is accepted: this feeds a chart, not a permission.
- */
 export async function POST(
   request: NextRequest,
   context: RouteContext<"/api/rooms/[slug]/speaking">,
@@ -58,5 +50,5 @@ export async function POST(
     { $inc: { "participants.$.speakingMs": body.data.speakingMs } },
   );
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

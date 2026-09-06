@@ -1,21 +1,3 @@
-/**
- * MongoDB has no foreign keys and therefore no cascading deletes, so the
- * cleanup that Postgres would do with `ON DELETE CASCADE` is written out here.
- * Everything that deletes a room or a meeting must go through these functions.
- *
- * The deletes are not wrapped in a transaction. A transaction would need a
- * replica set, and the failure mode without one is mild: an interrupted delete
- * leaves orphaned children that the next call — or `pruneOrphans` — removes.
- * Nothing reads a child without its parent, so an orphan is invisible rather
- * than wrong.
- *
- * Every query operator here is wrapped in `trusted()`. `sanitizeFilter` is on
- * globally so that a `$`-prefixed key arriving in a request body cannot widen
- * a query; the cost is that it cannot tell our own deliberate `$in` from an
- * injected one, and wraps both. `trusted()` is how Mongoose lets a caller say
- * this operator came from the code, not from a user.
- */
-
 import type { Types } from "mongoose";
 import { trusted } from "mongoose";
 import { DocModel } from "./models/doc";
@@ -54,11 +36,6 @@ export async function deleteRoomAndChildren(roomId: Types.ObjectId): Promise<voi
   await RoomModel.deleteOne({ _id: roomId });
 }
 
-/**
- * Removes children whose parent is gone — the residue of an interrupted delete
- * or of a room removed by its TTL index, which fires without running any of
- * the code above.
- */
 export async function pruneOrphans(): Promise<{ meetings: number; children: number }> {
   const rooms = await RoomModel.find().select("_id").lean();
   const liveRoomIds = rooms.map((room) => room._id);

@@ -28,12 +28,6 @@ export default async function MeetingPage({ params }: PageProps<"/m/[meetingId]"
     notFound();
   }
 
-  /*
-   * A meeting record names who was in a private conversation, so membership is
-   * checked rather than assumed from holding the link. Answering "not found"
-   * rather than "forbidden" also avoids confirming that a given meeting exists
-   * to somebody guessing ids.
-   */
   if (!canViewMeeting(detail.meeting, detail.room, session.user.id)) {
     notFound();
   }
@@ -112,8 +106,6 @@ export default async function MeetingPage({ params }: PageProps<"/m/[meetingId]"
                       className="h-full rounded-full"
                       style={{
                         width: `${Math.max(2, Math.round(share * 100))}%`,
-                        // Cycles through the chart tokens so neighbouring bars
-                        // stay distinguishable without a colour scale.
                         backgroundColor: `var(--chart-${(index % 5) + 1})`,
                       }}
                     />
@@ -138,7 +130,7 @@ export default async function MeetingPage({ params }: PageProps<"/m/[meetingId]"
                   {format.dateTime(new Date(message.createdAt), { timeStyle: "short" })}
                 </span>
                 <span className="font-medium">{message.senderName}</span>
-                <span className="mt-0.5 block break-words text-muted-foreground">
+                <span className="mt-0.5 block wrap-break-word text-muted-foreground">
                   {message.body}
                 </span>
               </li>
@@ -159,8 +151,6 @@ export default async function MeetingPage({ params }: PageProps<"/m/[meetingId]"
           <p className="text-sm text-muted-foreground">{t("boardEmpty")}</p>
         ) : (
           <div className="overflow-hidden rounded-xl bg-tile">
-            {/* Framed to the drawing rather than to the origin: a board someone
-                panned far from centre still shows up. */}
             <svg
               viewBox={`${bounds.x} ${bounds.y} ${bounds.width} ${bounds.height}`}
               className="h-auto w-full"

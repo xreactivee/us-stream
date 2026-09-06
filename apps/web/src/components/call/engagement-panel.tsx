@@ -7,24 +7,8 @@ import { type FormEvent, useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
+import type { PollView, QuestionView } from "@/types";
 
-interface PollView {
-  id: string;
-  question: string;
-  options: { index: number; label: string; votes: number }[];
-  totalVoters: number;
-  allowMultiple: boolean;
-  isClosed: boolean;
-  myVotes: number[];
-}
-
-/**
- * The poll as it will look once the server has counted this vote.
- *
- * Only this client's own contribution is moved, so the guess is wrong by at
- * most the votes that arrived from other people in the same instant — and the
- * server's answer replaces it a moment later regardless.
- */
 function withMyVotes(poll: PollView, optionIndexes: number[]): PollView {
   const chosen = new Set(optionIndexes);
   const previous = new Set(poll.myVotes);
@@ -41,24 +25,6 @@ function withMyVotes(poll: PollView, optionIndexes: number[]): PollView {
   };
 }
 
-interface QuestionView {
-  id: string;
-  body: string;
-  askedByName: string;
-  upvotes: number;
-  hasUpvoted: boolean;
-  isAnswered: boolean;
-  createdAt: number;
-}
-
-/**
- * Polls and Q&A.
- *
- * Both are ordinary request/response against our own API rather than
- * data-channel state: a vote has to be counted once and survive a reconnect,
- * which is a database's job, not a broadcast's. The data channel only carries
- * the nudge to refetch.
- */
 export function EngagementPanel({
   slug,
   canModerate,
@@ -66,7 +32,6 @@ export function EngagementPanel({
 }: {
   slug: string;
   canModerate: boolean;
-  /** Shown under a question the moment it is asked, before the server answers. */
   askedByName: string;
 }) {
   const t = useTranslations("room");
@@ -103,16 +68,6 @@ export function EngagementPanel({
     void refresh();
   }, [refresh]);
 
-  /*
-   * Every action below moves the interface first and talks to the server
-   * second.
-   *
-   * A vote that waits for a round trip before the bar moves reads as a broken
-   * button, and the person presses it again. The server remains the authority:
-   * it answers with the poll as it really stands and that answer replaces the
-   * guess, and a request that fails outright puts back what was on screen
-   * before the press.
-   */
   async function vote(pollId: string, optionIndexes: number[]) {
     const before = polls;
 
@@ -220,9 +175,6 @@ export function EngagementPanel({
     form.reset();
 
     const before = questions;
-    // A placeholder id, replaced the moment the refresh brings back the real
-    // row. It only has to be unlike any server id for the length of one
-    // request.
     const pendingId = `pending-${Date.now()}`;
 
     setQuestions((current) => [
@@ -329,8 +281,6 @@ export function EngagementPanel({
                         chosen ? "border-signal" : "border-border hover:bg-accent",
                       )}
                     >
-                      {/* The bar is behind the label so the number never
-                          becomes unreadable as the share grows. */}
                       <span
                         aria-hidden
                         className="absolute inset-y-0 left-0 bg-signal/15"
@@ -411,7 +361,7 @@ export function EngagementPanel({
               </button>
 
               <div className="min-w-0 flex-1">
-                <p className="text-sm break-words">{question.body}</p>
+                <p className="text-sm wrap-break-word">{question.body}</p>
                 <p className="mt-0.5 text-[0.625rem] text-muted-foreground">
                   {question.askedByName}
                   {question.isAnswered ? ` · ${t("questionAnswered")}` : ""}
@@ -446,14 +396,17 @@ function PollComposer({
   onCreated: (succeeded: boolean) => void;
 }) {
   const t = useTranslations("room");
-  const [options, setOptions] = useState<string[]>(Array(POLL_MIN_OPTIONS).fill(""));
+  const [options, setOptions] = useState<{ id: string; value: string }[]>(() => [
+    { id: "opt-1", value: "" },
+    { id: "opt-2", value: "" },
+  ]);
   const [allowMultiple, setAllowMultiple] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const question = String(new FormData(event.currentTarget).get("question") ?? "").trim();
-    const filled = options.map((option) => option.trim()).filter(Boolean);
+    const filled = options.map((option) => option.value.trim()).filter(Boolean);
 
     if (!question || filled.length < POLL_MIN_OPTIONS) {
       return;
@@ -485,13 +438,13 @@ function PollComposer({
 
       {options.map((option, index) => (
         <Input
-          // Options have no identity of their own; their position is the key.
-          // biome-ignore lint/suspicious/noArrayIndexKey: position is the identity here
-          key={index}
-          value={option}
+          key={option.id}
+          value={option.value}
           onChange={(event) =>
             setOptions((current) =>
-              current.map((entry, position) => (position === index ? event.target.value : entry)),
+              current.map((entry) =>
+                entry.id === option.id ? { ...entry, value: event.target.value } : entry,
+              ),
             )
           }
           aria-label={t("pollOption", { index: index + 1 })}
@@ -505,7 +458,12 @@ function PollComposer({
           type="button"
           variant="ghost"
           size="sm"
-          onClick={() => setOptions((current) => [...current, ""])}
+          onClick={() =>
+            setOptions((current) => [
+              ...current,
+              { id: `opt-${Date.now()}-${current.length + 1}`, value: "" },
+            ])
+          }
         >
           <Plus />
           {t("pollAddOption")}

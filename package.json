@@ -19,7 +19,6 @@
     "test:e2e": "pnpm --filter web test:e2e",
     "db:check": "pnpm --filter @us-stream/db db:check",
     "db:indexes": "pnpm --filter @us-stream/db db:indexes",
-    "deploy:env": "node scripts/deploy-env.mjs",
     "deploy": "node scripts/deploy.mjs"
   },
   "devDependencies": {

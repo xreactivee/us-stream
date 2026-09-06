@@ -1,28 +1,3 @@
-/**
- * Starts a build on both hosts without pushing anything.
- *
- *   pnpm deploy
- *
- * `git push` already deploys — both hosts watch the repository — so this is not
- * for shipping new commits. It is for the cases a push cannot cover: rebuilding
- * the commit that is already on the remote after changing an environment
- * variable, waking a service, or redeploying something that failed for a reason
- * that has since gone away.
- *
- * It never pushes. Firing a hook on top of a push would be two deploys of one
- * commit: the second supersedes the first, the host marks the first failed, and
- * it emails about a commit that deployed perfectly well.
- *
- * A deploy hook is a URL that starts a build when something POSTs to it. Anyone
- * holding one can spend your build minutes, so they live in `.env` beside the
- * other secrets and never in the repository:
- *
- *   VERCEL_DEPLOY_HOOK_URL   Vercel  > Settings > Git > Deploy Hooks > Create
- *   RENDER_DEPLOY_HOOK_URL   Render  > the service > Settings > Deploy Hook
- *
- * Either may be left out; the ones that are set are the ones that fire.
- */
-
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -30,7 +5,6 @@ import { fileURLToPath } from "node:url";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 
-/** Reads `.env` without pulling in a dependency for six lines of parsing. */
 function readEnv() {
   const entries = {};
 
@@ -48,20 +22,11 @@ function readEnv() {
         .trim()
         .replace(/^["']|["']$/g, "");
     }
-  } catch {
-    // No .env is fine: the hooks may come from the environment instead.
-  }
+  } catch {}
 
   return entries;
 }
 
-/**
- * Commits sitting locally that the hosts cannot see.
- *
- * Worth saying out loud rather than blocking on: a hook builds whatever is on
- * the remote, so unpushed work is simply not in the build, and being told that
- * beats wondering why the change did not appear.
- */
 function unpushedCount() {
   try {
     const branch = execFileSync("git", ["rev-parse", "--abbrev-ref", "HEAD"], {

@@ -40,7 +40,6 @@ export const viewport: Viewport = {
   ],
   width: "device-width",
   initialScale: 1,
-  // A call fills the viewport; letting the browser zoom it fights the layout.
   maximumScale: 1,
 };
 

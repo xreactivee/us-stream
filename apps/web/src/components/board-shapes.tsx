@@ -1,12 +1,5 @@
 import type { BoardShape } from "@us-stream/shared";
 
-/**
- * Drawing a whiteboard shape.
- *
- * Shared by the live canvas and by the read-only view on a past meeting, so
- * what someone sees afterwards is drawn by the same code that drew it at the
- * time. No `"use client"`: this is pure SVG and renders on the server too.
- */
 export function pairsOf(points: number[]): [number, number][] {
   const pairs: [number, number][] = [];
 

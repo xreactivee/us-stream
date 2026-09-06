@@ -5,12 +5,6 @@ import { buildInvite } from "@/lib/calendar";
 import { connectDb } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-/**
- * The calendar file for a scheduled meeting.
- *
- * Served to members of the room rather than to anyone holding the id: the file
- * contains the invite link, so handing it out freely would hand out the room.
- */
 export async function GET(_request: NextRequest, context: RouteContext<"/api/scheduled/[id]/ics">) {
   const { id } = await context.params;
   const session = await getSession();

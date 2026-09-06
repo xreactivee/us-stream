@@ -1,38 +1,21 @@
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
-/**
- * Environment access for the web app. Anything read at runtime goes through
- * here so a missing or malformed variable fails the build instead of turning
- * into a confusing 500 in production.
- */
 export const env = createEnv({
   server: {
     MONGODB_URI: z.string().min(1),
-
     LIVEKIT_API_KEY: z.string().min(1),
     LIVEKIT_API_SECRET: z.string().min(1),
-
     BETTER_AUTH_SECRET: z.string().min(16),
     BETTER_AUTH_URL: z.url(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
-
-    /** Signs the identity of people who join by link without an account. */
     GUEST_TOKEN_SECRET: z.string().min(16),
-
-    /** Shared secret for calls into the realtime service on Railway. */
     REALTIME_INTERNAL_SECRET: z.string().min(16),
   },
   client: {
-    /** The LiveKit signalling URL the browser connects to. */
     NEXT_PUBLIC_LIVEKIT_URL: z.string().min(1),
-    /** The realtime service, used for Yjs document sync. */
     NEXT_PUBLIC_REALTIME_URL: z.string().min(1),
-    /**
-     * Printed on the privacy policy and the terms, and submitted to Google's
-     * OAuth consent screen. Public, so use an address you are happy to publish.
-     */
     NEXT_PUBLIC_CONTACT_EMAIL: z.email().optional(),
   },
   runtimeEnv: {
@@ -50,6 +33,5 @@ export const env = createEnv({
     NEXT_PUBLIC_CONTACT_EMAIL: process.env.NEXT_PUBLIC_CONTACT_EMAIL,
   },
   emptyStringAsUndefined: true,
-  /** Lets `next build` run in CI without production secrets present. */
   skipValidation: process.env.SKIP_ENV_VALIDATION === "true",
 });

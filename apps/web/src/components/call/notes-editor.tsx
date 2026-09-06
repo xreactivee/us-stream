@@ -9,13 +9,6 @@ import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 import { colorFor, type YjsConnection } from "./use-yjs-doc";
 
-/**
- * Shared meeting notes.
- *
- * The Collaboration extension replaces Tiptap's own history with Yjs' undo
- * manager, which is why StarterKit's undo/redo is switched off: two histories
- * over one document undo each other's work.
- */
 export function NotesEditor({
   connection,
   displayName,
@@ -31,14 +24,7 @@ export function NotesEditor({
       extensions: [
         StarterKit.configure({ undoRedo: false }),
         Collaboration.configure({ document: connection.doc, field: "notes" }),
-        /*
-         * The name has to be given here, not only on the provider.
-         *
-         * The extension writes its own `user` option into awareness when it
-         * starts, and that option defaults to a nameless, colourless object —
-         * so whatever the connection had already published was overwritten and
-         * every caret was labelled with the raw client id instead of a person.
-         */
+
         CollaborationCaret.configure({
           provider: connection.provider,
           user: { name: displayName, color: colorFor(displayName) },

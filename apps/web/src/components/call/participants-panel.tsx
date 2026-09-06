@@ -21,14 +21,12 @@ export function ParticipantsPanel({
   actorOutranks: (identity: string) => boolean;
   onModerate: (action: "mute" | "remove", identity: string, name: string) => void;
   onMuteEveryone: () => void;
-  /** Identities with a raised hand, oldest first. */
+
   handQueue: string[];
 }) {
   const t = useTranslations("room");
   const participants = useParticipants();
 
-  // People with a hand up come first, in the order they raised it. Everyone
-  // else keeps LiveKit's ordering.
   const ordered = [...participants].sort((a, b) => {
     const aPlace = handQueue.indexOf(a.identity);
     const bPlace = handQueue.indexOf(b.identity);

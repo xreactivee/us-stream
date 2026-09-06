@@ -9,7 +9,6 @@ export async function generateMetadata() {
   return { title: t("title") };
 }
 
-/** Minutes, rounded — nobody reads a meeting length to the second. */
 function durationMinutes(startedAt: number, endedAt: number | null): number {
   return Math.max(1, Math.round(((endedAt ?? startedAt) - startedAt) / 60_000));
 }

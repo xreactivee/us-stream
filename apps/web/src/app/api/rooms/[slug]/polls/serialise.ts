@@ -1,23 +1,8 @@
 import type { Poll } from "@us-stream/db";
+import type { PollView } from "@/types";
 
-export interface PollView {
-  id: string;
-  question: string;
-  options: { index: number; label: string; votes: number }[];
-  totalVoters: number;
-  allowMultiple: boolean;
-  isClosed: boolean;
-  /** Which options the person asking has already chosen. */
-  myVotes: number[];
-}
+export type { PollView };
 
-/**
- * Turns a poll into what a participant is allowed to see.
- *
- * Only tallies cross the wire, never the list of who voted for what. An
- * anonymous poll whose raw votes are sent to every client is not anonymous,
- * and the difference is invisible until someone opens the network tab.
- */
 export function serialisePoll(poll: Poll, viewerIdentity: string): PollView {
   const tally = new Map<number, number>();
   const voters = new Set<string>();

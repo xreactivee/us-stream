@@ -8,14 +8,6 @@ import { getSession } from "@/lib/session";
 
 const ONE_YEAR_IN_SECONDS = 60 * 60 * 24 * 365;
 
-/**
- * Stores a language choice.
- *
- * The cookie is what actually decides the language of a request, so it is
- * always written; signed-in users additionally get it saved on their account
- * so the choice follows them to another browser. Passing `null` clears the
- * choice and hands the decision back to the visitor's country.
- */
 export async function setLocalePreference(value: string | null) {
   const cookieStore = await cookies();
 
@@ -49,7 +41,6 @@ export async function setLocalePreference(value: string | null) {
   return { ok: true as const };
 }
 
-/** The theme is applied in the browser; this only remembers it on the account. */
 export async function setThemePreference(value: string) {
   const parsed = updatePreferencesSchema.pick({ theme: true }).safeParse({ theme: value });
 

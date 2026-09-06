@@ -3,7 +3,6 @@
 import { useLocalParticipant } from "@livekit/components-react";
 import { useEffect, useState } from "react";
 
-/** True while a text field has focus, so shortcuts never eat typing. */
 function isTyping(target: EventTarget | null): boolean {
   const element = target as HTMLElement | null;
 
@@ -16,13 +15,6 @@ function isTyping(target: EventTarget | null): boolean {
   );
 }
 
-/**
- * Keyboard shortcuts and push-to-talk.
- *
- * Push-to-talk only unmutes while space is held if the microphone was muted to
- * begin with — holding space while already unmuted must not mute you on
- * release, which would be the opposite of what the key is for.
- */
 export function useCallShortcuts({
   onOpenPanel,
 }: {

@@ -24,9 +24,7 @@ export function RoomCard({ room }: { room: RoomSummary }) {
   const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [deleting, startDeleting] = useTransition();
-  // Removed from the grid on confirmation rather than on the server's reply:
-  // the decision has been made, and a card that lingers looks like a card that
-  // failed to delete.
+
   const [removed, setRemoved] = useState(false);
 
   const badges = [

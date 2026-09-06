@@ -21,7 +21,6 @@ export default async function RoomPage({ params }: PageProps<"/r/[slug]">) {
     <RoomExperience
       slug={room.slug}
       roomTitle={room.name}
-      // Only whether a password exists crosses to the client, never its hash.
       requiresPassword={Boolean(room.passwordHash)}
       knownName={session?.user.name ?? null}
       initialRole={roleForUser(room, session?.user.id)}

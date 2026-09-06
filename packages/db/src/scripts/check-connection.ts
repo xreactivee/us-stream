@@ -1,13 +1,3 @@
-/**
- * Verifies that `MONGODB_URI` actually reaches a cluster:
- *
- *   pnpm db:check
- *
- * Worth running whenever the connection string changes. A wrong password, a
- * missing IP allowance in Atlas' Network Access list and a malformed URI all
- * fail in different ways, and the error below says which.
- */
-
 import { config as loadEnv } from "dotenv";
 import { connectToDatabase, disconnectFromDatabase, mongoose } from "../connect";
 

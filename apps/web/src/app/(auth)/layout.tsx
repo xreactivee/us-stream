@@ -29,8 +29,6 @@ export default async function AuthLayout({ children }: { children: ReactNode }) 
         </div>
       </div>
 
-      {/* The stage panel. Decorative, so it is hidden rather than stacked on
-          small screens where it would only push the form below the fold. */}
       <aside className="stage-glow relative hidden overflow-hidden border-l border-border bg-card/40 lg:flex lg:flex-col lg:justify-end">
         <div className="p-14">
           <p className="max-w-md font-display text-3xl leading-tight font-semibold text-balance">

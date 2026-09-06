@@ -40,8 +40,7 @@ export function ScheduleMeetingDialog({ rooms }: { rooms: SchedulableRoom[] }) {
       body: JSON.stringify({
         roomId: String(data.get("roomId") ?? ""),
         title: String(data.get("title") ?? ""),
-        // `datetime-local` gives wall-clock text with no zone; the browser's
-        // own Date reading is what the person meant when they typed it.
+
         startsAt: new Date(String(data.get("startsAt") ?? "")).toISOString(),
         durationMinutes: Number(data.get("durationMinutes") ?? 30),
       }),

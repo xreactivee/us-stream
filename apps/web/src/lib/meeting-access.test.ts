@@ -40,14 +40,10 @@ describe("canViewMeeting", () => {
   });
 
   it("refuses everyone else", () => {
-    // A record names who was in a conversation and repeats what was said, so
-    // knowing the id is not a reason to be shown it.
     expect(canViewMeeting(meeting, room, "stranger")).toBe(false);
   });
 
   it("does not treat a signed-out participant as a match", () => {
-    // Guests store `null`, and `null === undefined` comparisons are exactly
-    // how this kind of check goes wrong.
     expect(canViewMeeting(meeting, room, "")).toBe(false);
   });
 });

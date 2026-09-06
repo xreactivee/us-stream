@@ -70,11 +70,6 @@ export function ControlBar({
   const { localParticipant, isMicrophoneEnabled, isCameraEnabled, isScreenShareEnabled } =
     useLocalParticipant();
 
-  /*
-   * Everything except the microphone, the camera and the way out. On a phone
-   * these collapse into one menu rather than wrapping onto a second row that
-   * would eat into the video.
-   */
   const secondary: SecondaryAction[] = [
     {
       key: "screen",
@@ -83,7 +78,6 @@ export function ControlBar({
       active: isScreenShareEnabled,
       onSelect: () =>
         void localParticipant.setScreenShareEnabled(!isScreenShareEnabled, {
-          // Sharing a video without its sound is the classic disappointment.
           audio: true,
           contentHint: "detail",
         }),
@@ -117,8 +111,7 @@ export function ControlBar({
       active: openPanel === "participants",
       onSelect: () => onOpenPanel(openPanel === "participants" ? null : "participants"),
     },
-    // Both of the following are dropped entirely where the browser cannot do
-    // them: an offer that silently fails is worse than no offer.
+
     ...(blurSupported
       ? [
           {
@@ -179,7 +172,6 @@ export function ControlBar({
         ))}
       </div>
 
-      {/* The same actions, one tap away, on a narrow screen. */}
       <div className="sm:hidden">
         <DropdownMenu.Root>
           <DropdownMenu.Trigger
@@ -247,7 +239,7 @@ function ControlButton({
   OnIcon: IconComponent;
   OffIcon: IconComponent;
   onClick: () => void;
-  /** For toggles where "on" is an action in progress rather than the norm. */
+
   highlightWhenActive?: boolean;
   pulsing?: boolean;
   badge?: number;

@@ -36,7 +36,7 @@ git remote -v
 If that prints nothing, create an empty repository on GitHub and:
 
 ```bash
-git remote add origin https://github.com/<user>/us-stream.git
+git remote add origin https://github.com/xreactivee/us-stream.git
 git push -u origin master
 ```
 
@@ -51,11 +51,7 @@ secret is entered by hand into Vercel and the realtime host instead.
 Neither host wants twenty values typed into a form, and typing them is where a
 deployment usually goes wrong — one transposed character in a secret produces a
 failure that looks like anything but a typo. Both can import a `.env` file
-instead, so build the two files from the one you already have:
-
-```bash
-pnpm deploy:env https://xrs-us-stream.vercel.app wss://us-stream.onrender.com
-```
+instead.
 
 The first argument is the address the browser will show. The second is the
 realtime service, and it is a **WebSocket** address — `wss://`, not `https://`.

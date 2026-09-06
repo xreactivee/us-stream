@@ -3,11 +3,6 @@ import { LegalPage } from "@/components/legal-page";
 
 const UPDATED_ON = "2026-09-05";
 
-/**
- * Shown on a public page and submitted to Google's OAuth consent screen, so it
- * should be an address the owner is willing to publish rather than a personal
- * one. Set `NEXT_PUBLIC_CONTACT_EMAIL` to change it.
- */
 const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "contact@example.com";
 
 export async function generateMetadata() {

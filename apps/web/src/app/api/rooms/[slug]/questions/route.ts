@@ -32,8 +32,6 @@ export async function GET(
     return NextResponse.json({ questions: [] });
   }
 
-  // Unanswered first, then by votes: the thing the room most wants asked sits
-  // at the top, and answered questions fall away without disappearing.
   const questions = await QuestionModel.find({ meetingId: meeting._id }).lean();
 
   questions.sort((a, b) => {
@@ -88,5 +86,8 @@ export async function POST(
     upvoters: [],
   });
 
-  return NextResponse.json({ question: serialiseQuestion(created.toObject(), caller.identity) });
+  return NextResponse.json(
+    { question: serialiseQuestion(created.toObject(), caller.identity) },
+    { status: 201 },
+  );
 }

@@ -39,8 +39,6 @@ export default async function DashboardPage() {
     name: room.name,
     isPersistent: room.isPersistent,
     isLocked: room.isLocked,
-    // The hash itself never leaves the server; the client only needs to know
-    // that a password exists.
     hasPassword: Boolean(room.passwordHash),
     waitingRoomEnabled: room.waitingRoomEnabled,
     isOwner: room.ownerId === session.user.id,
@@ -108,13 +106,6 @@ export default async function DashboardPage() {
   );
 }
 
-/**
- * The sign-in methods attached to this account.
- *
- * The password shows up in the same `account` collection as Google does, under
- * the "credential" provider, which is how we know whether unlinking Google
- * would leave somebody with no way back in.
- */
 async function loadConnections(
   headers: Headers,
 ): Promise<{ connections: ConnectionView[]; hasPassword: boolean }> {
@@ -128,12 +119,6 @@ async function loadConnections(
   };
 }
 
-/**
- * The next few bookings across the rooms this person belongs to.
- *
- * Anything already past is left out rather than deleted: a meeting that
- * happened is history, and the record is small enough not to matter.
- */
 async function loadUpcoming(
   rooms: { id: Types.ObjectId; name: string; slug: string }[],
   userId: string,

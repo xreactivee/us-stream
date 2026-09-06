@@ -1,4 +1,4 @@
-import { hasAuthority, isRole, moderateRoomSchema, outranks, type Role } from "@us-stream/shared";
+import { hasAuthority, moderateRoomSchema, outranks, roleFromMetadata } from "@us-stream/shared";
 import { TrackSource } from "livekit-server-sdk";
 import { type NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
@@ -6,14 +6,6 @@ import { livekitRoomName, roomService } from "@/lib/livekit";
 import { getRoomBySlug, roleForUser, updateRoom } from "@/lib/rooms";
 import { getSession } from "@/lib/session";
 
-/**
- * Host actions: mute someone, mute everyone, remove someone, lock the room.
- *
- * Two checks stand between a request and an effect. The caller must hold at
- * least cohost in this room, and — for anything aimed at a person — must
- * outrank that person. Without the second check two cohosts could remove each
- * other, and a cohost could remove the owner of the room they are guests in.
- */
 export async function POST(
   request: NextRequest,
   context: RouteContext<"/api/rooms/[slug]/moderate">,
@@ -48,13 +40,12 @@ export async function POST(
   const action = body.data;
 
   if (action.action === "setLock") {
-    // Locking is a change to the room itself, so it belongs to its owner.
     if (!hasAuthority(actorRole, "owner")) {
       return NextResponse.json({ error: "forbidden" }, { status: 403 });
     }
 
     await updateRoom(room._id, { isLocked: action.locked });
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
   if (action.action === "muteAll") {
@@ -62,7 +53,7 @@ export async function POST(
 
     await Promise.all(
       participants
-        .filter((participant) => outranks(actorRole, roleOf(participant.metadata)))
+        .filter((participant) => outranks(actorRole, roleFromMetadata(participant.metadata)))
         .flatMap((participant) =>
           participant.tracks
             .filter((track) => track.source === TrackSource.MICROPHONE && !track.muted)
@@ -72,7 +63,7 @@ export async function POST(
         ),
     );
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
   const target = await roomService
@@ -83,36 +74,20 @@ export async function POST(
     return NextResponse.json({ error: "participant_not_found" }, { status: 404 });
   }
 
-  if (!outranks(actorRole, roleOf(target.metadata))) {
+  if (!outranks(actorRole, roleFromMetadata(target.metadata))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
   if (action.action === "remove") {
     await roomService.removeParticipant(roomName, action.targetIdentity);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true }, { status: 201 });
   }
 
-  // Muting is one-way on purpose: a host can switch someone's microphone off,
-  // but only that person can switch it back on.
   await Promise.all(
     target.tracks
       .filter((track) => track.source === TrackSource.MICROPHONE && !track.muted)
       .map((track) => roomService.mutePublishedTrack(roomName, target.identity, track.sid, true)),
   );
 
-  return NextResponse.json({ ok: true });
-}
-
-/** Participant metadata is set by us at token time; treat it defensively anyway. */
-function roleOf(metadata: string | undefined): Role {
-  if (!metadata) {
-    return "guest";
-  }
-
-  try {
-    const parsed = JSON.parse(metadata) as { role?: unknown };
-    return isRole(parsed.role) ? parsed.role : "guest";
-  } catch {
-    return "guest";
-  }
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

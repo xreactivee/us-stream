@@ -14,8 +14,6 @@ describe("safeNextPath", () => {
   });
 
   it("refuses anything that would leave the site", () => {
-    // Each of these would turn the sign-in page into an open redirect that
-    // sends people elsewhere with our name on the link.
     expect(safeNextPath("https://evil.example")).toBe("/dashboard");
     expect(safeNextPath("//evil.example")).toBe("/dashboard");
     expect(safeNextPath("/\\evil.example")).toBe("/dashboard");

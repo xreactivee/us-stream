@@ -7,14 +7,6 @@ import { NotesEditor } from "./notes-editor";
 import { useYjsDoc } from "./use-yjs-doc";
 import { Whiteboard } from "./whiteboard";
 
-/**
- * Mounts one collaborative document while its tab is on screen.
- *
- * The connection lives and dies with the tab on purpose: leaving it open would
- * keep a cursor on other people's boards for someone who is looking at
- * something else, and the document itself is safe either way because the
- * server holds it and writes snapshots.
- */
 export function CollaborationSurface({
   kind,
   token,

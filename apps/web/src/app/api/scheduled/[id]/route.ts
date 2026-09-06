@@ -3,7 +3,6 @@ import { type NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
 import { getSession } from "@/lib/session";
 
-/** Cancels a scheduled meeting. Only whoever booked it may. */
 export async function DELETE(_request: NextRequest, context: RouteContext<"/api/scheduled/[id]">) {
   const { id } = await context.params;
   const session = await getSession();
@@ -25,5 +24,5 @@ export async function DELETE(_request: NextRequest, context: RouteContext<"/api/
 
   return result.deletedCount === 0
     ? NextResponse.json({ error: "not_found" }, { status: 404 })
-    : NextResponse.json({ ok: true });
+    : new NextResponse(null, { status: 204 });
 }

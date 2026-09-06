@@ -20,8 +20,6 @@ describe("decodeEvent", () => {
   });
 
   it("returns null instead of throwing on anything malformed", () => {
-    // A peer can put whatever it likes on the wire. One bad frame must not
-    // take the call down, so every rejection is a null rather than a throw.
     expect(decodeEvent(encoder.encode("not json"))).toBeNull();
     expect(decodeEvent(payload({ type: "chat.message" }))).toBeNull();
     expect(decodeEvent(payload({ type: "nonsense" }))).toBeNull();

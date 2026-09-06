@@ -1,19 +1,8 @@
 import type { Question } from "@us-stream/db";
+import type { QuestionView } from "@/types";
 
-export interface QuestionView {
-  id: string;
-  body: string;
-  askedByName: string;
-  upvotes: number;
-  hasUpvoted: boolean;
-  isAnswered: boolean;
-  createdAt: number;
-}
+export type { QuestionView };
 
-/**
- * Only the count of upvotes crosses the wire, never the list of who cast them.
- * People ask more freely when they are not publishing who agreed with them.
- */
 export function serialiseQuestion(question: Question, viewerIdentity: string): QuestionView {
   return {
     id: String(question._id),

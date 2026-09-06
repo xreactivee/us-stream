@@ -32,7 +32,6 @@ async function load(request: NextRequest, slug: string, questionId: string) {
   return { caller, question } as const;
 }
 
-/** Toggles this person's upvote. */
 export async function POST(
   request: NextRequest,
   context: RouteContext<"/api/rooms/[slug]/questions/[questionId]">,
@@ -46,20 +45,18 @@ export async function POST(
 
   const { caller, question } = loaded;
 
-  // Storing voters rather than a counter is what makes this a toggle instead
-  // of a button somebody can hold down.
   question.upvoters = question.upvoters.includes(caller.identity)
     ? question.upvoters.filter((voter) => voter !== caller.identity)
     : [...question.upvoters, caller.identity];
 
   await question.save();
 
-  return NextResponse.json({
-    question: serialiseQuestion(question.toObject(), caller.identity),
-  });
+  return NextResponse.json(
+    { question: serialiseQuestion(question.toObject(), caller.identity) },
+    { status: 201 },
+  );
 }
 
-/** Marks a question answered. Hosts only. */
 export async function DELETE(
   request: NextRequest,
   context: RouteContext<"/api/rooms/[slug]/questions/[questionId]">,
@@ -80,7 +77,5 @@ export async function DELETE(
   question.answeredAt = new Date();
   await question.save();
 
-  return NextResponse.json({
-    question: serialiseQuestion(question.toObject(), caller.identity),
-  });
+  return new NextResponse(null, { status: 204 });
 }

@@ -11,14 +11,6 @@ const scryptAsync = promisify(scrypt) as (
 
 const KEY_LENGTH = 64;
 
-/**
- * Room passwords.
- *
- * scrypt from Node's own crypto rather than argon2 or bcrypt: both of those
- * are native modules, which are awkward on Vercel, and scrypt is a memory-hard
- * KDF that is entirely adequate for a shared room code. Account passwords are
- * Better Auth's business and never come through here.
- */
 export async function hashRoomPassword(password: string): Promise<string> {
   const salt = randomBytes(16);
   const derived = await scryptAsync(password.normalize("NFKC"), salt, KEY_LENGTH);

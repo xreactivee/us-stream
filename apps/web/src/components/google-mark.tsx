@@ -1,4 +1,3 @@
-/** Google's brand mark, required by their sign-in branding guidelines. */
 export function GoogleMark() {
   return (
     <svg viewBox="0 0 18 18" className="size-4" aria-hidden focusable="false">

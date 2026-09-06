@@ -11,32 +11,10 @@ import {
 } from "@us-stream/shared";
 import { RoomEvent } from "livekit-client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ChatMessage, FloatingReaction } from "@/types";
 
-export interface ChatMessage {
-  id: string;
-  senderIdentity: string;
-  senderName: string;
-  body: string;
-  /** Set when the message was sent to one person rather than the room. */
-  toIdentity: string | null;
-  sentAt: number;
-}
+export type { ChatMessage, FloatingReaction };
 
-export interface FloatingReaction {
-  id: string;
-  emoji: ReactionEmoji;
-  senderName: string;
-}
-
-/**
- * Everything that is not audio or video.
- *
- * Chat, reactions and raised hands travel over LiveKit's data channel, so they
- * arrive as fast as the media does and need no server in the path. Chat is
- * additionally written to our own API by the sender, because the data channel
- * delivers to whoever is connected right now and nothing else — a message has
- * to outlive the meeting to be worth reading afterwards.
- */
 export function useRoomEvents({ slug }: { slug: string }) {
   const room = useRoomContext();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -46,8 +24,6 @@ export function useRoomEvents({ slug }: { slug: string }) {
 
   const appendMessage = useCallback((message: ChatMessage) => {
     setMessages((current) =>
-      // The sender sees its own message immediately and then receives nothing
-      // back, but a reconnect can replay history; the id keeps it to one.
       current.some((existing) => existing.id === message.id) ? current : [...current, message],
     );
   }, []);
@@ -71,8 +47,6 @@ export function useRoomEvents({ slug }: { slug: string }) {
     [],
   );
 
-  // Backfill from storage, so someone joining halfway through can read what
-  // was said before they arrived.
   useEffect(() => {
     let cancelled = false;
 
@@ -106,9 +80,6 @@ export function useRoomEvents({ slug }: { slug: string }) {
         case "chat.message":
           appendMessage({
             id: event.id,
-            // Sender identity comes from LiveKit, not from the payload: the
-            // SFU knows who published the frame, the frame's own claim about
-            // itself is only a claim.
             senderIdentity: participant.identity,
             senderName: participant.name || participant.identity,
             body: event.body,
@@ -151,7 +122,6 @@ export function useRoomEvents({ slug }: { slug: string }) {
     };
   }, [room, appendMessage, showReaction]);
 
-  // Someone who leaves cannot still have their hand up.
   useEffect(() => {
     function handleDisconnect(participant: { identity: string }) {
       setRaisedHands((current) => {
@@ -204,8 +174,6 @@ export function useRoomEvents({ slug }: { slug: string }) {
 
       await publish(event, toIdentity ? [toIdentity] : undefined);
 
-      // Storage is best-effort: a failed write loses the message from the
-      // history, not from the conversation happening right now.
       void fetch(`/api/rooms/${slug}/messages`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -251,12 +219,10 @@ export function useRoomEvents({ slug }: { slug: string }) {
     await publish({
       type: "presence.hand",
       raised,
-      // Everyone orders the queue by this, so it has to come from the raiser.
       raisedAt: raised ? Date.now() : null,
     });
   }, [publish, handRaised, localIdentity]);
 
-  /** Oldest hand first — the queue people expect when they raise one. */
   const handQueue = Object.entries(raisedHands)
     .sort(([, a], [, b]) => a - b)
     .map(([identity]) => identity);

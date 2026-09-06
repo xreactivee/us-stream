@@ -4,14 +4,6 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import type { FloatingReaction } from "./use-room-events";
 
-/**
- * Says out loud what the call only shows.
- *
- * Reactions float across the video and a raised hand appears as a badge in the
- * header; someone using a screen reader gets neither. This mirrors both into a
- * polite live region, which interrupts nothing but is read when the reader
- * next pauses.
- */
 export function LiveAnnouncer({
   reactions,
   handQueueNames,

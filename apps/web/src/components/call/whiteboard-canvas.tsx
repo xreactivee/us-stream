@@ -22,10 +22,8 @@ interface TextDraft {
   value: string;
 }
 
-/** How close the eraser has to pass to a shape to take it out. */
 const ERASER_RADIUS = 12;
 
-/** Pen samples closer together than this are dropped; they add size, not shape. */
 const MIN_SAMPLE_DISTANCE = 2;
 
 export function WhiteboardCanvas({
@@ -63,7 +61,6 @@ export function WhiteboardCanvas({
     viewY: number;
   } | null>(null);
 
-  /** Screen pixels to board coordinates, through the current pan and zoom. */
   const toBoard = useCallback(
     (event: { clientX: number; clientY: number }) => {
       const rect = svgRef.current?.getBoundingClientRect();
@@ -89,8 +86,6 @@ export function WhiteboardCanvas({
   );
 
   function handlePointerDown(event: ReactPointerEvent<SVGSVGElement>) {
-    // Only the primary button draws; the middle button always pans, which is
-    // the habit every drawing tool has trained.
     if (event.button === 1 || tool === "pan") {
       panOrigin.current = {
         pointerX: event.clientX,
@@ -161,8 +156,6 @@ export function WhiteboardCanvas({
       return;
     }
 
-    // Every other tool is defined by two corners, so the second one is simply
-    // replaced as the pointer moves.
     setDraft({
       kind: draft.kind,
       points: [draft.points[0] ?? 0, draft.points[1] ?? 0, point.x, point.y],
@@ -178,8 +171,6 @@ export function WhiteboardCanvas({
       return;
     }
 
-    // A click with no drag leaves nothing behind rather than a dot nobody can
-    // see or select.
     if (draft.points.length >= 4 || (draft.kind === "pen" && draft.points.length >= 6)) {
       onAddShape({
         id: crypto.randomUUID(),
@@ -202,8 +193,6 @@ export function WhiteboardCanvas({
       return;
     }
 
-    // Zoom towards the pointer, not the origin — anything else feels like the
-    // board is running away.
     const scale = clamp(view.scale * (event.deltaY < 0 ? 1.1 : 1 / 1.1), 0.2, 5);
     const pointerX = event.clientX - rect.left;
     const pointerY = event.clientY - rect.top;

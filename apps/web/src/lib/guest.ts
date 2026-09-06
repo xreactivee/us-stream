@@ -3,24 +3,10 @@ import "server-only";
 import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { DISPLAY_NAME_MAX_LENGTH, GUEST_TOKEN_TTL_SECONDS } from "@us-stream/shared";
 import { env } from "@/env";
+import type { GuestIdentity } from "@/types";
 
-/**
- * Identity for someone who joins by link without an account.
- *
- * The point is not to authenticate anyone — it is that the name and id a guest
- * carries into a room were issued by us and cannot be edited in the browser.
- * Without that, a guest could rename themselves to a host's display name, or
- * reuse another participant's identity to impersonate them over the data
- * channel.
- */
-export interface GuestIdentity {
-  id: string;
-  displayName: string;
-  /** Unix seconds. */
-  expiresAt: number;
-}
+export type { GuestIdentity };
 
-/** Holds the signed identity so a reload does not create a new participant. */
 export const GUEST_COOKIE_NAME = "us-stream-guest";
 
 function sign(payload: string): string {
@@ -43,7 +29,6 @@ export function issueGuestToken(displayName: string): { token: string; identity:
   return { token: `${payload}.${sign(payload)}`, identity };
 }
 
-/** Returns `null` for anything tampered with, malformed or expired. */
 export function verifyGuestToken(token: string): GuestIdentity | null {
   const separator = token.lastIndexOf(".");
 

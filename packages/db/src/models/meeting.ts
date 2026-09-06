@@ -1,44 +1,7 @@
-/**
- * A meeting is one occupied session of a room — the span between LiveKit's
- * `room_started` and `room_finished` webhooks. Chat and polls
- * hang off a meeting rather than the room, so a persistent room's history stays
- * separated by occasion.
- *
- * Participants are embedded because their number is bounded by the room's
- * capacity and they are always read alongside the meeting.
- */
-
-import { ROLES, type Role } from "@us-stream/shared";
-import { Schema, type Types } from "mongoose";
-import { defineModel, type UserId } from "./define";
-
-export interface MeetingParticipant {
-  /**
-   * The LiveKit identity. Unique within one meeting and stable for its
-   * duration; this is what data-channel events address.
-   */
-  identity: string;
-  /** `null` for guests who joined by link without an account. */
-  userId: UserId | null;
-  displayName: string;
-  role: Role;
-  joinedAt: Date;
-  leftAt: Date | null;
-  /** Accumulated speaking time, for the post-meeting talk-time breakdown. */
-  speakingMs: number;
-}
-
-export interface Meeting {
-  _id: Types.ObjectId;
-  roomId: Types.ObjectId;
-  /** LiveKit's own room identifier, so webhooks can be matched to a document. */
-  livekitRoomSid: string | null;
-  startedAt: Date;
-  endedAt: Date | null;
-  participants: MeetingParticipant[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { ROLES } from "@us-stream/shared";
+import { Schema } from "mongoose";
+import type { AdmissionRequest, Meeting, MeetingParticipant } from "../types";
+import { defineModel } from "./define";
 
 const participantSchema = new Schema<MeetingParticipant>(
   {
@@ -64,15 +27,6 @@ const meetingSchema = new Schema<Meeting>(
   { timestamps: true, collection: "meetings" },
 );
 
-/*
- * A meeting document exists before LiveKit reports its sid, so most rows carry
- * `null` here for a while.
- *
- * This has to be a *partial* index, not a sparse one. Sparse skips documents
- * where the field is missing, but `null` is a present value — so under a sparse
- * unique index the second meeting waiting for its sid collides with the first.
- * The partial filter indexes only rows where a real sid has arrived.
- */
 meetingSchema.index(
   { livekitRoomSid: 1 },
   { unique: true, partialFilterExpression: { livekitRoomSid: { $type: "string" } } },
@@ -81,21 +35,6 @@ meetingSchema.index({ roomId: 1, startedAt: -1 });
 meetingSchema.index({ "participants.userId": 1 });
 
 export const MeetingModel = defineModel("Meeting", meetingSchema);
-
-/**
- * Someone held in the waiting room. A host resolves the document by admitting
- * or denying; the waiting client polls its own request until then. Unresolved
- * requests expire on their own so an abandoned lobby does not accumulate.
- */
-export interface AdmissionRequest {
-  _id: Types.ObjectId;
-  roomId: Types.ObjectId;
-  displayName: string;
-  userId: UserId | null;
-  status: "pending" | "admitted" | "denied";
-  createdAt: Date;
-  resolvedAt: Date | null;
-}
 
 const admissionRequestSchema = new Schema<AdmissionRequest>(
   {

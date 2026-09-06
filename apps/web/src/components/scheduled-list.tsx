@@ -22,7 +22,7 @@ export function ScheduledList({ items }: { items: ScheduledView[] }) {
   const format = useFormatter();
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  // Cancelled rows leave the list on confirmation, not on the server's reply.
+
   const [cancelled, setCancelled] = useState<string[]>([]);
 
   const visible = items.filter((item) => !cancelled.includes(item.id));
@@ -53,8 +53,6 @@ export function ScheduledList({ items }: { items: ScheduledView[] }) {
             <Link href={`/r/${item.roomSlug}`}>{item.roomSlug}</Link>
           </Button>
 
-          {/* A plain link, not a fetch: the browser's own download handling is
-              what hands the file to a calendar application. */}
           <Button asChild variant="outline" size="sm">
             <a href={`/api/scheduled/${item.id}/ics`} download>
               <Download />

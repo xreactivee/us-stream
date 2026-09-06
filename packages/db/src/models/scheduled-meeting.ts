@@ -1,18 +1,6 @@
-/** A meeting planned ahead of time; produces a calendar entry and a reminder. */
-
-import { Schema, type Types } from "mongoose";
-import { defineModel, type UserId } from "./define";
-
-export interface ScheduledMeeting {
-  _id: Types.ObjectId;
-  roomId: Types.ObjectId;
-  createdById: UserId;
-  title: string;
-  startsAt: Date;
-  durationMinutes: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
+import { Schema } from "mongoose";
+import type { ScheduledMeeting } from "../types";
+import { defineModel } from "./define";
 
 const scheduledMeetingSchema = new Schema<ScheduledMeeting>(
   {

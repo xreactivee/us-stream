@@ -4,25 +4,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { connectDb } from "@/lib/db";
 import { getRoomBySlug, roleForUser } from "@/lib/rooms";
 import { getSession } from "@/lib/session";
+import type { PendingAdmission } from "@/types";
 
-export interface PendingAdmission {
-  id: string;
-  displayName: string;
-  /** Unix milliseconds, so the client can show how long they have waited. */
-  requestedAt: number;
-  /** True for someone with an account, which is a small vote of confidence. */
-  isSignedIn: boolean;
-}
+export type { PendingAdmission };
 
 type Gate = { ok: true; room: Room } | { ok: false; response: NextResponse };
 
-/**
- * The waiting room, from the host's side.
- *
- * Both handlers demand cohost or better in this specific room. The people in
- * the queue are by definition not in the call yet, so nothing about them
- * reaches anyone who has not been trusted with letting them in.
- */
 async function requireHost(slug: string): Promise<Gate> {
   const session = await getSession();
 
@@ -96,8 +83,6 @@ export async function POST(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  // Scoped to this room as well as to the id: a host of one room must not be
-  // able to resolve a request belonging to another.
   const updated = await AdmissionRequestModel.findOneAndUpdate(
     { _id: new Types.ObjectId(body.data.requestId), roomId: gate.room._id, status: "pending" },
     {
@@ -112,5 +97,5 @@ export async function POST(
     return NextResponse.json({ error: "not_found" }, { status: 404 });
   }
 
-  return NextResponse.json({ ok: true });
+  return NextResponse.json({ ok: true }, { status: 201 });
 }

@@ -50,7 +50,6 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
     return NextResponse.json({ error: "unauthenticated" }, { status: 401 });
   }
 
-  // Anyone may vote; only a host may ask.
   if (!caller.isHost) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
@@ -77,5 +76,8 @@ export async function POST(request: NextRequest, context: RouteContext<"/api/roo
     isAnonymous: body.data.isAnonymous,
   });
 
-  return NextResponse.json({ poll: serialisePoll(created.toObject(), caller.identity) });
+  return NextResponse.json(
+    { poll: serialisePoll(created.toObject(), caller.identity) },
+    { status: 201 },
+  );
 }
