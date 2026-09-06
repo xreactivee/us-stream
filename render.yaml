@@ -1,0 +1,44 @@
+# Render blueprint for the realtime service.
+#
+# Only `apps/realtime` is deployed here. The Next.js app goes to Vercel, which
+# cannot host this one: it holds a WebSocket open for Yjs document sync and runs
+# a timer to close finished meetings, and Vercel's functions live for the length
+# of one request.
+#
+# The build runs from the repository root, not from `apps/realtime`, because the
+# service depends on the `@us-stream/*` workspace packages and those only resolve
+# with the whole workspace present.
+services:
+  - type: web
+    name: us-stream-realtime
+    runtime: node
+    plan: free
+    # Frankfurt is the closest Render region to Turkey; the round trip to the
+    # whiteboard is felt directly while drawing.
+    region: frankfurt
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build
+    startCommand: pnpm --filter realtime start
+    # The service reports ready only once it has reached MongoDB, so a failed
+    # health check here means a real problem rather than a slow boot.
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+
+      # `sync: false` means Render asks for the value on first deploy and stores
+      # it itself. None of these belong in this file — it is committed.
+      - key: MONGODB_URI
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: REALTIME_INTERNAL_SECRET
+        sync: false
+      # The Vercel URL, comma-separated if there is more than one.
+      - key: ALLOWED_ORIGINS
+        sync: false

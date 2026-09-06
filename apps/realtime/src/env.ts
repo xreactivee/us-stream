@@ -1,7 +1,7 @@
 import { config as loadDotenv } from "dotenv";
 import { z } from "zod";
 
-// Local development reads the single .env at the repository root. On Railway
+// Local development reads the single .env at the repository root. On a host
 // the file is absent and the platform's own variables are used instead.
 loadDotenv({ path: "../../.env", quiet: true });
 
@@ -40,7 +40,8 @@ const envSchema = z.object({
 });
 
 function loadEnv() {
-  // Railway injects PORT; everything else comes from the service's variables.
+  // Every host injects PORT and expects the process to use it; everything
+  // else comes from the service's own variables.
   // LIVEKIT_URL falls back to the browser-facing name so a single .env serves
   // both apps in development.
   const parsed = envSchema.safeParse({

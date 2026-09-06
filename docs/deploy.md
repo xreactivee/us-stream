@@ -2,10 +2,18 @@
 
 Two things get deployed, from one repository:
 
-| What                        | Where     | Why there                                                            |
-| --------------------------- | --------- | -------------------------------------------------------------------- |
-| `apps/web` — the Next.js app | Vercel    | The whole interface, auth, room management, LiveKit token minting     |
-| `apps/realtime` — Fastify    | Railway   | The whiteboard/notes WebSocket, LiveKit webhooks, closing meetings     |
+| What                         | Where              | Why there                                                        |
+| ---------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `apps/web` — the Next.js app | Vercel             | The whole interface, auth, room management, LiveKit token minting |
+| `apps/realtime` — Fastify    | Render (or Railway) | The whiteboard/notes WebSocket, LiveKit webhooks, closing meetings |
+
+**The realtime service cannot go on Vercel**, and this is not a configuration
+problem to work around. It holds a WebSocket open for as long as somebody has
+the whiteboard on screen, and it runs a timer every fifteen seconds to close
+meetings whose LiveKit room has gone. A Vercel function exists for the length of
+one request. Any host that runs a normal long-lived Node process will do —
+Render, Railway, Fly.io, Koyeb, a VPS — and the settings below are the same
+shape on all of them.
 
 Nothing else is deployed. `packages/*` are TypeScript source that both apps
 compile into themselves, and there is no separate database server to run —
@@ -34,14 +42,14 @@ git push -u origin master
 
 **`.env` is in `.gitignore` and must stay out of the repository.** The database
 password, the Google client secret and the LiveKit API secret are in it. Every
-secret is entered by hand into Vercel and Railway instead.
+secret is entered by hand into Vercel and the realtime host instead.
 
 ---
 
 ## 2. Collect the values you will paste
 
 Have these open before you start. They are the same values already in your local
-`.env`, except the three URLs, which do not exist yet.
+`.env`, except the two URLs, which do not exist yet.
 
 | Variable                    | Where it comes from                                     |
 | --------------------------- | ------------------------------------------------------- |
@@ -56,7 +64,7 @@ Have these open before you start. They are the same values already in your local
 | `GOOGLE_CLIENT_SECRET`      | Google Cloud, unchanged                                 |
 | `NEXT_PUBLIC_CONTACT_EMAIL` | an address you are willing to publish (see step 7)      |
 | `BETTER_AUTH_URL`           | the Vercel URL — step 3                                 |
-| `NEXT_PUBLIC_REALTIME_URL`  | the Railway URL — step 4                                |
+| `NEXT_PUBLIC_REALTIME_URL`  | the realtime service's URL — step 4                     |
 | `ALLOWED_ORIGINS`           | the Vercel URL — step 4                                 |
 
 Atlas also needs to accept connections from both platforms. Neither has fixed
@@ -93,52 +101,81 @@ a room, video, audio, screen sharing, chat — already works. Note the URL.
 
 ---
 
-## 4. Railway — the realtime service
+## 4. Render — the realtime service
 
-**New Project → Deploy from GitHub repo → this repository.**
+The repository carries a `render.yaml` blueprint, so this is mostly confirming
+what it already says.
 
-Railway will try to guess how to build it and guess wrong, because the root of
-the repository is a workspace rather than an app. Under the service's
-**Settings**:
+**New → Blueprint → connect this repository.** Render reads `render.yaml`,
+proposes one web service called `us-stream-realtime`, and asks for the six
+values marked `sync: false`. Fill them in:
 
-- **Root Directory:** leave it as the repository root, `/`. It has to be the
-  root — the service depends on `@us-stream/*`, which only exist there.
-- **Build Command:** `pnpm install --frozen-lockfile && pnpm --filter realtime build`
+| Variable                   | Value                                                    |
+| -------------------------- | -------------------------------------------------------- |
+| `MONGODB_URI`              | the same Atlas string                                    |
+| `LIVEKIT_URL`              | the same `wss://…livekit.cloud`                          |
+| `LIVEKIT_API_KEY`          | the same key                                             |
+| `LIVEKIT_API_SECRET`       | the same secret                                          |
+| `REALTIME_INTERNAL_SECRET` | **exactly** what you put on Vercel                       |
+| `ALLOWED_ORIGINS`          | your Vercel URL, e.g. `https://us-stream.vercel.app`     |
+
+Do **not** add `PORT`. Render injects it and the service reads it from there.
+
+If you would rather click through the form than use the blueprint, it is **New →
+Web Service**, and the three settings that are not defaults:
+
+- **Root Directory:** leave it empty — the repository root. It has to be the
+  root, because the service depends on `@us-stream/*` and those only exist there.
+- **Build Command:** `corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build`
 - **Start Command:** `pnpm --filter realtime start`
 
-Variables:
-
-| Variable                   | Value                                                     |
-| -------------------------- | --------------------------------------------------------- |
-| `MONGODB_URI`              | the same Atlas string                                     |
-| `LIVEKIT_URL`              | the same `wss://…livekit.cloud`                           |
-| `LIVEKIT_API_KEY`          | the same key                                              |
-| `LIVEKIT_API_SECRET`       | the same secret                                           |
-| `REALTIME_INTERNAL_SECRET` | **exactly** what you put on Vercel                        |
-| `ALLOWED_ORIGINS`          | your Vercel URL, e.g. `https://us-stream.vercel.app`      |
-| `NODE_ENV`                 | `production`                                              |
-
-Do **not** set `PORT`. Railway injects it, and the service reads it from there.
-
-Under **Settings → Networking**, press **Generate Domain**. You get something
-like `us-stream-realtime-production.up.railway.app`.
-
-Check it is alive:
+Check it is alive once it deploys:
 
 ```bash
-curl https://<your-railway-domain>/health
+curl https://us-stream-realtime.onrender.com/health
 ```
 
 `{"status":"ok",...}` means the service is up and reached MongoDB.
 
----
+### What the free plan costs you
+
+A free Render web service **sleeps after about fifteen minutes without traffic**,
+and that has two visible effects here:
+
+- The first person to open the whiteboard or the notes after a quiet spell waits
+  the better part of a minute while the service wakes. The call itself is
+  unaffected — video and audio go through LiveKit, not through this.
+- The meeting-close timer does not run while the service sleeps, so a meeting can
+  sit open in `/history` until something wakes the service again. It corrects
+  itself; it is just late.
+
+Two ways out. Pay for the smallest paid instance, which does not sleep. Or point
+a free uptime monitor at `/health` every ten minutes — one always-on service fits
+inside the free monthly instance hours, so this is within the plan rather than
+around it.
+
+## 4b. Railway, if you prefer it
+
+Railway works and the shape is identical; use it if your account will let you.
+
+Under the service's **Settings**:
+
+- **Root Directory:** the repository root, `/`
+- **Build Command:** `pnpm install --frozen-lockfile && pnpm --filter realtime build`
+- **Start Command:** `pnpm --filter realtime start`
+
+The same variables as above, plus `NODE_ENV=production`. Do not set `PORT`.
+Under **Settings → Networking**, press **Generate Domain**.
+
+Railway does not sleep, so the two caveats above do not apply — but its free
+trial credit runs out, after which the service is a few dollars a month.
 
 ## 5. Point the two at each other
 
 Back on Vercel, add:
 
 ```
-NEXT_PUBLIC_REALTIME_URL=wss://<your-railway-domain>
+NEXT_PUBLIC_REALTIME_URL=wss://<your-realtime-domain>
 ```
 
 **`wss://`, not `https://`.** It is the address of a WebSocket, and the browser
@@ -148,7 +185,7 @@ Redeploy on Vercel (Deployments → the latest one → Redeploy). A `NEXT_PUBLIC
 variable is baked into the browser bundle at build time, so setting it is not
 enough on its own — the app has to be built again.
 
-If you later attach a custom domain, `ALLOWED_ORIGINS` on Railway takes both,
+If you later attach a custom domain, `ALLOWED_ORIGINS` on the realtime service takes both,
 comma-separated and without spaces:
 
 ```
@@ -162,7 +199,7 @@ https://us-stream.vercel.app,https://us-stream.com
 In the LiveKit Cloud console, **Settings → Webhooks**, add:
 
 ```
-https://<your-railway-domain>/livekit/webhook
+https://<your-realtime-domain>/livekit/webhook
 ```
 
 Meetings close without this — the service asks LiveKit which rooms are still
@@ -218,8 +255,10 @@ gains an index.
 
 - **Vercel Hobby** — free, and this app fits: no cron, no long-running
   functions, no image optimisation of note.
-- **Railway** — the trial credit runs out; after that the service is a few
-  dollars a month. It is one small always-on Node process.
+- **Render free** — free, with the sleeping caveat in step 4. The smallest
+  paid instance removes it for a few dollars a month.
+- **Railway** — no sleeping, but the trial credit runs out and then it is a few
+  dollars a month. One small always-on Node process either way.
 - **MongoDB Atlas M0** — free, 512 MB. Chat and whiteboard snapshots are small.
 - **LiveKit Cloud** — the free tier covers small meetings. Media minutes are
   what it counts, and they are what a growing meeting spends.
@@ -244,9 +283,12 @@ never pasted.
 variable failed validation; it refuses to boot half-configured rather than fail
 later on somebody's first request.
 
+**The whiteboard takes forty seconds to connect, then behaves normally.** That is
+a free Render instance waking up, not a bug. See step 4.
+
 ## One deliberate limitation
 
-**Run exactly one Railway replica.** The whiteboard and the notes are held in
+**Run exactly one replica of the realtime service.** The whiteboard and the notes are held in
 that process's memory. A second replica would keep its own copy of the same
 board, and two people could end up drawing on documents that never meet.
 Scaling past one replica needs Redis pub/sub between them, which is a change to
