@@ -1,12 +1,22 @@
 /**
- * Pushes the current branch and asks both hosts to build it.
- *
- * Vercel and Render both watch the repository and deploy on their own, so this
- * is not usually needed. It exists for the cases where that is switched off, or
- * where you want one command that ends with both builds started rather than two
- * dashboards to open:
+ * Pushes the current branch, which is what deploys it.
  *
  *   pnpm deploy
+ *
+ * Both hosts watch the repository and build on a push by themselves, so the
+ * push is the whole job. This wraps it to refuse a dirty tree and to say what
+ * happens next.
+ *
+ * **Do not fire the deploy hooks as well while auto-deploy is on.** A push and
+ * a hook are two separate deploys of one commit: the second one supersedes the
+ * first, the host marks the first failed or cancelled, and it emails to say so.
+ * The site ends up correct and current while the inbox fills with failures for
+ * commits that deployed perfectly well — which is a genuinely confusing thing
+ * to debug, because nothing is actually broken.
+ *
+ * If auto-deploy is switched off on either host, ask for the hooks explicitly:
+ *
+ *   pnpm deploy --hooks
  *
  * A deploy hook is a URL that starts a build when something POSTs to it. Anyone
  * holding one can spend your build minutes, so they live in `.env` beside the
@@ -70,19 +80,32 @@ if (dirty) {
 console.log(`Pushing ${branch}…`);
 execFileSync("git", ["push", "origin", branch], { cwd: root, stdio: "inherit" });
 
-const hooks = [
-  ["Vercel", env.VERCEL_DEPLOY_HOOK_URL],
-  ["Render", env.RENDER_DEPLOY_HOOK_URL],
-].filter(([, url]) => url);
+// Off unless asked for. Firing a hook on top of the push the host is already
+// reacting to means two deploys of one commit, and a failure email for the one
+// that loses.
+const useHooks = process.argv.slice(2).includes("--hooks");
 
-if (hooks.length === 0) {
+const hooks = useHooks
+  ? [
+      ["Vercel", env.VERCEL_DEPLOY_HOOK_URL],
+      ["Render", env.RENDER_DEPLOY_HOOK_URL],
+    ].filter(([, url]) => url)
+  : [];
+
+if (!useHooks) {
   console.log(
-    "\nPushed. No deploy hooks configured, so both hosts will build this on their own\n" +
-      "if their Git auto-deploy is on. To trigger them from here instead, put\n" +
-      "VERCEL_DEPLOY_HOOK_URL and RENDER_DEPLOY_HOOK_URL in .env — see the top of\n" +
-      "this file for where each one is created.",
+    "\nPushed. Both hosts build this on their own from here.\n" +
+      "If either has auto-deploy switched off, run `pnpm deploy --hooks` instead.",
   );
   process.exit(0);
+}
+
+if (hooks.length === 0) {
+  console.error(
+    "\n--hooks was asked for but neither VERCEL_DEPLOY_HOOK_URL nor\n" +
+      "RENDER_DEPLOY_HOOK_URL is set in .env — see the top of this file.",
+  );
+  process.exit(1);
 }
 
 let failed = false;
