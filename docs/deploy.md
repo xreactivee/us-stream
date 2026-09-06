@@ -127,7 +127,12 @@ Web Service**, and the three settings that are not defaults:
 - **Root Directory:** leave it empty — the repository root. It has to be the
   root, because the service depends on `@us-stream/*` and those only exist there.
 - **Build Command:** `corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build`
-- **Start Command:** `pnpm --filter realtime start`
+- **Start Command:** `node apps/realtime/dist/server.js`
+
+The start command calls Node directly rather than `pnpm --filter realtime start`.
+It runs in a fresh container, so going through pnpm makes corepack download and
+unpack itself first — twelve seconds on every start, and a network dependency at
+the moment the service is trying to come up.
 
 Check it is alive once it deploys:
 
@@ -136,6 +141,17 @@ curl https://us-stream-realtime.onrender.com/health
 ```
 
 `{"status":"ok",...}` means the service is up and reached MongoDB.
+
+### If the Blueprint sync fails
+
+The email Render sends says only that it failed. The actual message is on the
+Blueprint's own page in the dashboard, and it is usually one of two things: a
+field that cannot be changed after the service exists (`region` and `plan` are
+both fixed at creation), or a service that failed its first deploy.
+
+Nothing depends on the blueprint. Creating the service by hand with the three
+settings above reaches exactly the same place, and is the faster route when you
+are in a hurry — delete the blueprint, keep the service.
 
 ### What the free plan costs you
 
@@ -282,6 +298,15 @@ never pasted.
 **The realtime service restarts in a loop.** Its logs print exactly which
 variable failed validation; it refuses to boot half-configured rather than fail
 later on somebody's first request.
+
+**`Dynamic require of "fs" is not supported`, on the first line of `dist/server.js`.**
+Something that calls `require()` at runtime has been bundled into an ESM output —
+the MongoDB driver does this, and it is why `mongoose` and `mongodb` are in
+`external` in `apps/realtime/tsup.config.ts` and `mongoose` is a declared
+dependency of that package. If you add another dependency that loads Node
+built-ins dynamically, it belongs in that list too. Run `node dist/server.js`
+locally after building; `pnpm dev` runs the TypeScript through `tsx` and never
+touches the bundle, so this class of failure only appears once it is deployed.
 
 **The whiteboard takes forty seconds to connect, then behaves normally.** That is
 a free Render instance waking up, not a bug. See step 4.

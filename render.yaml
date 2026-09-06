@@ -17,7 +17,11 @@ services:
     # whiteboard is felt directly while drawing.
     region: frankfurt
     buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build
-    startCommand: pnpm --filter realtime start
+    # Node directly rather than `pnpm --filter realtime start`. The start command
+    # runs in a fresh container, so going through pnpm makes corepack download
+    # and unpack itself before the server can boot — twelve seconds added to
+    # every start, and a network dependency at the worst moment.
+    startCommand: node apps/realtime/dist/server.js
     # The service reports ready only once it has reached MongoDB, so a failed
     # health check here means a real problem rather than a slow boot.
     healthCheckPath: /health
