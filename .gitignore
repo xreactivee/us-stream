@@ -30,6 +30,4 @@ Thumbs.db
 .vscode/*
 !.vscode/extensions.json
 
-# local infra
-docker/data/
 *.log

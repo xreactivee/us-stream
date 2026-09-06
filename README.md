@@ -8,10 +8,9 @@ shared whiteboard, collaborative notes, a waiting room and polls.
 | Piece               | Runs on       | Responsibility                                                     |
 | ------------------- | ------------- | ------------------------------------------------------------------ |
 | `apps/web`          | Vercel        | The whole UI, plus auth, room CRUD and LiveKit token minting        |
-| `apps/realtime`     | Railway       | Yjs sync, LiveKit webhooks, meeting close-out — anything needing a persistent socket or a timer |
+| `apps/realtime`     | Render        | Yjs sync, LiveKit webhooks, meeting close-out — anything needing a persistent socket or a timer |
 | LiveKit             | LiveKit Cloud | The SFU: audio, video, screen share, data channels, TURN            |
 | MongoDB             | Atlas         | Rooms, meetings, chat history, polls, document snapshots            |
-| Redis               | Railway       | Yjs pub/sub between realtime replicas (only from phase 5)           |
 | `packages/shared`   | —             | Zod schemas, constants, roles, the in-call data-channel protocol    |
 | `packages/db`       | —             | Mongoose models, the connection singleton, and the cascade helpers  |
 | `packages/livekit`  | —             | Token minting and the role-to-grant mapping, used by both servers. Never imported from the browser |
@@ -26,8 +25,7 @@ works, but TCP head-of-line blocking degrades audio and video noticeably under p
 Cloud's free tier gives real UDP plus TURN at no cost.
 
 Nothing in the code depends on that choice. `NEXT_PUBLIC_LIVEKIT_URL`, `LIVEKIT_API_KEY` and
-`LIVEKIT_API_SECRET` point wherever you like — a self-hosted server on a VPS, the local
-`docker-compose.yml`, or LiveKit Cloud.
+`LIVEKIT_API_SECRET` point wherever you like — a self-hosted server on a VPS or LiveKit Cloud.
 
 ## Getting started
 
@@ -44,12 +42,10 @@ The repository keeps a **single `.env` at its root**. The web app loads it throu
 
 ### Infrastructure
 
-If you have Docker, `docker compose up -d` starts MongoDB, Redis and a development LiveKit server
-matching the defaults in `.env.example`.
-
-Without Docker, point `MONGODB_URI` at a MongoDB Atlas cluster and `NEXT_PUBLIC_LIVEKIT_URL` /
-`LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` at a LiveKit Cloud project. Redis is not needed before
-phase 5.
+There is nothing to start locally. Point `MONGODB_URI` at a MongoDB Atlas cluster and
+`NEXT_PUBLIC_LIVEKIT_URL` / `LIVEKIT_API_KEY` / `LIVEKIT_API_SECRET` at a LiveKit Cloud project —
+the same services production uses, both free at this size. Development against the real thing costs
+nothing to run and removes a whole class of "works on my machine".
 
 ```bash
 pnpm db:check     # confirm MONGODB_URI actually reaches a cluster
