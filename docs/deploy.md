@@ -79,14 +79,24 @@ URI. Restricting it further requires a paid VPC peering plan.
 **New Project → import the repository.** Then, before deploying:
 
 - **Root Directory:** `apps/web`
-- Leave **Include files outside the root directory** on. It is what lets the
-  build see `packages/*` and the pnpm lockfile; without it the install fails on
-  the `workspace:*` dependencies.
+- **Include files outside of the Root Directory in the Build Step: ON.** This is
+  the setting the deploy fails on, and it sits directly under Root Directory in
+  Settings → General. With it off, Vercel uploads only `apps/web`, finds no
+  `pnpm-lock.yaml` there, falls back to npm, and npm stops at the first
+  `workspace:*` dependency it cannot resolve. Turn it on before the first build.
 - **Framework preset:** Next.js — detected automatically
 - **Build / Install / Output:** leave all three empty. The defaults run
   `pnpm install` at the repository root and `pnpm build` in `apps/web`, which is
   correct. The build script wraps the command in `dotenv-cli`, which simply
   finds no `.env` on Vercel and carries on with the platform's own variables.
+
+If the toggle is on and the install still reaches for npm, put the whole
+repository in front of Vercel instead — it is the same build by a shorter route:
+
+- **Root Directory:** empty
+- **Build Command:** `pnpm --filter web build`
+- **Output Directory:** `apps/web/.next`
+- **Install Command:** `pnpm install --frozen-lockfile`
 
 Add every variable from step 2 **except** `NEXT_PUBLIC_REALTIME_URL` and
 `ALLOWED_ORIGINS` (that one is the realtime service's, not the web app's). For
@@ -137,7 +147,7 @@ the moment the service is trying to come up.
 Check it is alive once it deploys:
 
 ```bash
-curl https://us-stream-realtime.onrender.com/health
+curl https://us-stream.onrender.com/health
 ```
 
 `{"status":"ok",...}` means the service is up and reached MongoDB.
@@ -294,6 +304,12 @@ Vercel do not belong to the project `NEXT_PUBLIC_LIVEKIT_URL` names.
 **Everything works locally and nothing works deployed.** Compare Vercel's
 variable list against step 2 line by line. It is almost always one that was
 never pasted.
+
+**`Unsupported URL Type "workspace:"` during Vercel's install.** Vercel is using
+npm because it never saw `pnpm-lock.yaml`, which lives at the repository root
+while the Root Directory is `apps/web`. Turn on **Include files outside of the
+Root Directory in the Build Step**, or move the Root Directory to the repository
+root — both routes are in step 3. Nothing in the repository needs changing.
 
 **The realtime service restarts in a loop.** Its logs print exactly which
 variable failed validation; it refuses to boot half-configured rather than fail
