@@ -1,6 +1,6 @@
 # us-stream
 
-us-stream — self-hosted video conferencing for teams.
+us-stream — self-hosted video conferencing platform for teams.
 
 ## Features
 - Rooms you can return to, video, and audio
