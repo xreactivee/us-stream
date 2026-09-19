@@ -50,16 +50,13 @@ function unpushedCount() {
 
 const env = { ...readEnv(), ...process.env };
 
-const hooks = [
-  ["Vercel", env.VERCEL_DEPLOY_HOOK_URL],
-  ["Render", env.RENDER_DEPLOY_HOOK_URL],
-].filter(([, url]) => url);
+const hooks = [["Vercel", env.VERCEL_DEPLOY_HOOK_URL]].filter(([, url]) => url);
 
 if (hooks.length === 0) {
   console.error(
-    "No deploy hooks configured. Put VERCEL_DEPLOY_HOOK_URL and/or\n" +
-      "RENDER_DEPLOY_HOOK_URL in .env — see the top of this file for where each\n" +
-      "one is created.",
+    "No deploy hook configured. Put VERCEL_DEPLOY_HOOK_URL in .env — see the\n" +
+      "top of this file for where it is created. Railway has no hook URL for\n" +
+      "this; rebuild it with `railway redeploy` instead.",
   );
   process.exit(1);
 }

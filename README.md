@@ -9,7 +9,7 @@ us-stream — self-hosted video conferencing for teams.
 
 ## Architecture
 - `apps/web`: Vercel (UI, auth, room CRUD, LiveKit token minting)
-- `apps/realtime`: Render (Yjs sync, LiveKit webhooks, meeting close-out)
+- `apps/realtime`: Railway (Yjs sync, LiveKit webhooks, meeting close-out)
 - LiveKit Cloud: SFU for audio, video, screen share, data channels, and TURN
 - MongoDB Atlas: Data storage for rooms, meetings, chat history, polls, and document snapshots
 - `packages/shared`: Zod schemas, constants, roles, and in-call data-channel protocol
@@ -23,6 +23,10 @@ us-stream — self-hosted video conferencing for teams.
 - LiveKit
 - Tailwind CSS
 - Biome
+
+## Getting started
+
+Requires Node 22 or newer and pnpm 11.
 
 ## Installation
 ```bash

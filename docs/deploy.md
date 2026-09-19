@@ -4,15 +4,15 @@ Two things get deployed, from one repository:
 
 | What                         | Where              | Why there                                                        |
 | ---------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `apps/web` — the Next.js app | Vercel             | The whole interface, auth, room management, LiveKit token minting |
-| `apps/realtime` — Fastify    | Render (or Railway) | The whiteboard/notes WebSocket, LiveKit webhooks, closing meetings |
+| `apps/web` — the Next.js app | Vercel              | The whole interface, auth, room management, LiveKit token minting |
+| `apps/realtime` — Fastify    | Railway (or Render) | The whiteboard/notes WebSocket, LiveKit webhooks, closing meetings |
 
 **The realtime service cannot go on Vercel**, and this is not a configuration
 problem to work around. It holds a WebSocket open for as long as somebody has
 the whiteboard on screen, and it runs a timer every fifteen seconds to close
 meetings whose LiveKit room has gone. A Vercel function exists for the length of
 one request. Any host that runs a normal long-lived Node process will do —
-Render, Railway, Fly.io, Koyeb, a VPS — and the settings below are the same
+Railway, Render, Fly.io, Koyeb, a VPS — and the settings below are the same
 shape on all of them.
 
 Nothing else is deployed. `packages/*` are TypeScript source that both apps
@@ -60,10 +60,10 @@ them reach a dashboard.
 
 That writes:
 
-| File                    | Import into                                                  |
-| ----------------------- | ------------------------------------------------------------ |
-| `deploy-env/vercel.env` | Vercel → Settings → Environment Variables → **Import .env**   |
-| `deploy-env/render.env` | Render → the service → Environment → **Add from .env**        |
+| File                     | Import into                                                   |
+| ------------------------ | -------------------------------------------------------------- |
+| `deploy-env/vercel.env`  | Vercel → Settings → Environment Variables → **Import .env**    |
+| `deploy-env/railway.env` | Railway → the service → **Variables** (paste, or `railway variable set`) |
 
 `deploy-env/` is gitignored and holds the real secrets. Import the files, then
 delete the directory if you would rather not have a second copy lying around;
@@ -135,82 +135,79 @@ what keeps the whole workspace in the upload.
 
 ---
 
-## 4. Render — the realtime service
+## 4. Railway — the realtime service
 
-The repository carries a `render.yaml` blueprint, so this is mostly confirming
-what it already says.
+The repository carries a `railway.json` at the root, so a service created
+against this repo picks up its build and start commands on its own — nothing to
+retype into the dashboard.
 
-**New → Blueprint → connect this repository.** Render reads `render.yaml`,
-proposes one web service called `us-stream-realtime`, and asks for the values
-marked `sync: false`. Import `deploy-env/render.env` from step 2 rather than
-typing them.
+**New Project → Deploy from GitHub repo → this repository.** Or from the CLI,
+run once from the repository root:
 
-Do **not** add `PORT`. Render injects it and the service reads it from there.
+```bash
+railway init --name us-stream-realtime
+railway add --repo <owner>/<repo> --branch main --service us-stream-realtime
+```
 
-If you would rather click through the form than use the blueprint, it is **New →
-Web Service**, and the three settings that are not defaults:
+Either way you get one service, building from the repository root (it has to be
+the root — the service depends on `@us-stream/*`, which only resolves with the
+whole workspace present):
 
-- **Root Directory:** leave it empty — the repository root. It has to be the
-  root, because the service depends on `@us-stream/*` and those only exist there.
 - **Build Command:** `corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build`
 - **Start Command:** `node apps/realtime/dist/server.js`
 
-The start command calls Node directly rather than `pnpm --filter realtime start`.
-It runs in a fresh container, so going through pnpm makes corepack download and
-unpack itself first — twelve seconds on every start, and a network dependency at
-the moment the service is trying to come up.
+The start command calls Node directly rather than `pnpm --filter realtime start`
+— it runs in a fresh container, and going through pnpm makes corepack download
+and unpack itself first, adding a network dependency at the moment the service
+is trying to come up.
+
+Set the variables from `deploy-env/railway.env` (step 2), either pasted into
+**Variables** in the dashboard or with the CLI:
+
+```bash
+railway variable set MONGODB_URI="..." --skip-deploys
+```
+
+Do **not** set `PORT`. Railway injects it and the service reads it from there.
+
+Give the service a public domain — dashboard **Settings → Networking → Generate
+Domain**, or:
+
+```bash
+railway domain --service us-stream-realtime
+```
 
 Check it is alive once it deploys:
 
 ```bash
-curl https://us-stream.onrender.com/health
+curl https://<your-railway-domain>/health
 ```
 
 `{"status":"ok",...}` means the service is up and reached MongoDB.
 
-### If the Blueprint sync fails
+### What it costs
 
-The email Render sends says only that it failed. The actual message is on the
-Blueprint's own page in the dashboard, and it is usually one of two things: a
-field that cannot be changed after the service exists (`region` and `plan` are
-both fixed at creation), or a service that failed its first deploy.
+Railway does not sleep a service between requests, so there is no wake-up
+latency and the meeting-close timer always runs on schedule. New accounts get a
+small amount of trial credit; once that runs out, one small always-on Node
+process is a few dollars a month.
 
-Nothing depends on the blueprint. Creating the service by hand with the three
-settings above reaches exactly the same place, and is the faster route when you
-are in a hurry — delete the blueprint, keep the service.
+## 4b. Render, if you prefer it
 
-### What the free plan costs you
+Render works too, and the shape is identical. Under the service's **Settings**:
 
-A free Render web service **sleeps after about fifteen minutes without traffic**,
-and that has two visible effects here:
+- **Root Directory:** leave it empty — the repository root.
+- **Build Command:** `corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build`
+- **Start Command:** `node apps/realtime/dist/server.js`
 
-- The first person to open the whiteboard or the notes after a quiet spell waits
-  the better part of a minute while the service wakes. The call itself is
-  unaffected — video and audio go through LiveKit, not through this.
-- The meeting-close timer does not run while the service sleeps, so a meeting can
-  sit open in `/history` until something wakes the service again. It corrects
-  itself; it is just late.
+The same variables as above. Do not set `PORT`.
 
-Two ways out. Pay for the smallest paid instance, which does not sleep. Or point
-a free uptime monitor at `/health` every ten minutes — one always-on service fits
-inside the free monthly instance hours, so this is within the plan rather than
-around it.
-
-## 4b. Railway, if you prefer it
-
-Railway works and the shape is identical; use it if your account will let you.
-
-Under the service's **Settings**:
-
-- **Root Directory:** the repository root, `/`
-- **Build Command:** `pnpm install --frozen-lockfile && pnpm --filter realtime build`
-- **Start Command:** `pnpm --filter realtime start`
-
-The same variables as above, plus `NODE_ENV=production`. Do not set `PORT`.
-Under **Settings → Networking**, press **Generate Domain**.
-
-Railway does not sleep, so the two caveats above do not apply — but its free
-trial credit runs out, after which the service is a few dollars a month.
+A free Render web service **sleeps after about fifteen minutes without
+traffic**: the first person to open the whiteboard after a quiet spell waits
+the better part of a minute while it wakes, and the meeting-close timer is late
+by the same amount. Paying for the smallest instance removes the sleep, or a
+free uptime monitor pinging `/health` every ten minutes keeps it within the
+free plan's monthly instance hours.
 
 ## 5. Redeploy Vercel once the realtime URL is real
 
@@ -293,10 +290,10 @@ gains an index.
 
 - **Vercel Hobby** — free, and this app fits: no cron, no long-running
   functions, no image optimisation of note.
-- **Render free** — free, with the sleeping caveat in step 4. The smallest
-  paid instance removes it for a few dollars a month.
 - **Railway** — no sleeping, but the trial credit runs out and then it is a few
   dollars a month. One small always-on Node process either way.
+- **Render free** — free, with the sleeping caveat in step 4b. The smallest
+  paid instance removes it for a few dollars a month.
 - **MongoDB Atlas M0** — free, 512 MB. Chat and whiteboard snapshots are small.
 - **LiveKit Cloud** — the free tier covers small meetings. Media minutes are
   what it counts, and they are what a growing meeting spends.
@@ -337,7 +334,8 @@ locally after building; `pnpm dev` runs the TypeScript through `tsx` and never
 touches the bundle, so this class of failure only appears once it is deployed.
 
 **The whiteboard takes forty seconds to connect, then behaves normally.** That is
-a free Render instance waking up, not a bug. See step 4.
+a free Render instance waking up, not a bug — see step 4b. Railway does not do
+this.
 
 ## One deliberate limitation
 

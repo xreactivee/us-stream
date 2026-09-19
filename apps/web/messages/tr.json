@@ -310,5 +310,24 @@
     "disconnect": "Bağlantıyı kes",
     "disconnectConfirm": "Google bağlantısı kaldırılacak. Bundan sonra sadece şifrenle girebilirsin. Emin misin?",
     "failed": "Bağlanamadı. Biraz sonra tekrar dene."
+  },
+  "password": {
+    "setTitle": "Şifre belirle",
+    "setHint": "Bir şifre belirle, Google olmadan da giriş yapabil.",
+    "changeTitle": "Şifreyi değiştir",
+    "changeHint": "Giriş yaparken kullandığın şifreyi güncelle.",
+    "current": "Mevcut şifre",
+    "new": "Yeni şifre",
+    "newPlaceholder": "En az 8 karakter",
+    "submitSet": "Şifreyi belirle",
+    "submitChange": "Şifreyi değiştir",
+    "submitting": "Kaydediliyor",
+    "success": "Şifre güncellendi.",
+    "errors": {
+      "tooShort": "Şifre en az 8 karakter olmalı.",
+      "tooLong": "Bu şifre çok uzun.",
+      "wrongCurrent": "Mevcut şifre yanlış.",
+      "generic": "Kaydedilemedi. Biraz sonra tekrar dene."
+    }
   }
 }

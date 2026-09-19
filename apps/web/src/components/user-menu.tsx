@@ -40,6 +40,7 @@ export function UserMenu({
             width={36}
             height={36}
             unoptimized
+            referrerPolicy="no-referrer"
             className="size-full object-cover"
           />
         ) : (

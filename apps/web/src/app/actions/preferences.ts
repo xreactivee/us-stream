@@ -1,6 +1,7 @@
 "use server";
 
 import { LOCALE_COOKIE_NAME, updatePreferencesSchema } from "@us-stream/shared";
+import { APIError } from "better-auth/api";
 import { revalidatePath } from "next/cache";
 import { cookies, headers } from "next/headers";
 import { auth } from "@/lib/auth";
@@ -58,4 +59,26 @@ export async function setThemePreference(value: string) {
   }
 
   return { ok: true as const };
+}
+
+export async function setPassword(newPassword: string) {
+  const session = await getSession();
+
+  if (!session) {
+    return { ok: false as const, error: "UNAUTHORIZED" };
+  }
+
+  try {
+    await auth.api.setPassword({
+      headers: await headers(),
+      body: { newPassword },
+    });
+
+    return { ok: true as const };
+  } catch (error) {
+    return {
+      ok: false as const,
+      error: error instanceof APIError ? error.body?.code : "generic",
+    };
+  }
 }

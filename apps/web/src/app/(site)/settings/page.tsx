@@ -1,6 +1,10 @@
+import { headers } from "next/headers";
 import { getTranslations } from "next-intl/server";
+import { ConnectionsPanel } from "@/components/connections-panel";
 import { LocaleSwitcher } from "@/components/locale-switcher";
+import { PasswordPanel } from "@/components/password-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { loadConnections } from "@/lib/connections";
 import { requireSession } from "@/lib/session";
 
 export async function generateMetadata() {
@@ -10,7 +14,11 @@ export async function generateMetadata() {
 
 export default async function SettingsPage() {
   await requireSession("/settings");
-  const t = await getTranslations("settings");
+  const [t, tConnections, { connections, hasPassword }] = await Promise.all([
+    getTranslations("settings"),
+    getTranslations("connections"),
+    loadConnections(await headers()),
+  ]);
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-14">
@@ -33,6 +41,18 @@ export default async function SettingsPage() {
           <ThemeToggle />
         </section>
       </div>
+
+      <section className="mt-10 space-y-4">
+        <div>
+          <h2 className="text-lg font-semibold">{tConnections("title")}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{tConnections("subtitle")}</p>
+        </div>
+        <ConnectionsPanel connections={connections} canUnlink={hasPassword} />
+      </section>
+
+      <section className="mt-10 space-y-4">
+        <PasswordPanel hasPassword={hasPassword} />
+      </section>
     </div>
   );
 }

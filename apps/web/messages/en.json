@@ -310,5 +310,24 @@
     "disconnect": "Disconnect",
     "disconnectConfirm": "Google will be unlinked. After this you can only sign in with your password. Are you sure?",
     "failed": "Could not connect. Try again in a moment."
+  },
+  "password": {
+    "setTitle": "Set a password",
+    "setHint": "Add a password so you can also sign in without Google.",
+    "changeTitle": "Change password",
+    "changeHint": "Update the password you sign in with.",
+    "current": "Current password",
+    "new": "New password",
+    "newPlaceholder": "At least 8 characters",
+    "submitSet": "Set password",
+    "submitChange": "Change password",
+    "submitting": "Saving",
+    "success": "Password updated.",
+    "errors": {
+      "tooShort": "Passwords must be at least 8 characters.",
+      "tooLong": "That password is too long.",
+      "wrongCurrent": "Current password is incorrect.",
+      "generic": "Could not save. Try again in a moment."
+    }
   }
 }

@@ -35,7 +35,7 @@ export function ConnectionsPanel({
 
     const result = await authClient.linkSocial({
       provider: "google",
-      callbackURL: "/dashboard",
+      callbackURL: "/settings",
     });
 
     if (result.error) {
