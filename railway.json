@@ -1,8 +1,7 @@
 {
   "$schema": "https://railway.com/railway.schema.json",
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build"
+    "builder": "NIXPACKS"
   },
   "deploy": {
     "startCommand": "node apps/realtime/dist/server.js",

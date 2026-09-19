@@ -137,9 +137,14 @@ what keeps the whole workspace in the upload.
 
 ## 4. Railway — the realtime service
 
-The repository carries a `railway.json` at the root, so a service created
-against this repo picks up its build and start commands on its own — nothing to
-retype into the dashboard.
+The repository carries a `railway.json` and a `nixpacks.toml` at the root, so
+a service created against this repo automatically configures its build and
+runtime using Nixpacks — no Docker required. `nixpacks.toml` installs `pnpm`
+directly and builds the realtime service from the repository root.
+
+**Important:** In Railway Service Settings, make sure **Root Directory** is
+left empty (or `/`). It must build from the repository root because the
+service depends on `@us-stream/*` packages in `packages/`.
 
 **New Project → Deploy from GitHub repo → this repository.** Or from the CLI,
 run once from the repository root:
@@ -149,17 +154,8 @@ railway init --name us-stream-realtime
 railway add --repo <owner>/<repo> --branch main --service us-stream-realtime
 ```
 
-Either way you get one service, building from the repository root (it has to be
-the root — the service depends on `@us-stream/*`, which only resolves with the
-whole workspace present):
-
-- **Build Command:** `corepack enable && pnpm install --frozen-lockfile && pnpm --filter realtime build`
-- **Start Command:** `node apps/realtime/dist/server.js`
-
-The start command calls Node directly rather than `pnpm --filter realtime start`
-— it runs in a fresh container, and going through pnpm makes corepack download
-and unpack itself first, adding a network dependency at the moment the service
-is trying to come up.
+Either way you get one service, building from the repository root with
+Nixpacks. The start command runs `node apps/realtime/dist/server.js` directly.
 
 Set the variables from `deploy-env/railway.env` (step 2), either pasted into
 **Variables** in the dashboard or with the CLI:
